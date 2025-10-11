@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Copy, Plus, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
@@ -51,9 +52,48 @@ const NewCustomer = () => {
 
   const [authorizedPersons, setAuthorizedPersons] = useState<Person[]>([]);
   const [beneficialOwners, setBeneficialOwners] = useState<BeneficialOwner[]>([]);
+  const [availableDocuments, setAvailableDocuments] = useState<string[]>([]);
 
   const requiresCommercialRegister = () => {
     return ["gmbh", "ag", "ug", "kg", "ohg"].includes(formData.legal_form);
+  };
+
+  const getDocumentTypes = () => {
+    const baseTypes = [
+      { value: "id_document", label: "Ausweisdokument" },
+      { value: "proof_of_address", label: "Adressnachweis" },
+      { value: "other", label: "Sonstiges" },
+    ];
+
+    if (["gmbh", "ag", "ug", "kg", "ohg"].includes(formData.legal_form)) {
+      return [
+        { value: "commercial_register", label: "Handelsregisterauszug" },
+        { value: "transparency_register", label: "Transparenzregister" },
+        { value: "articles_of_association", label: "Gesellschaftsvertrag" },
+        ...baseTypes,
+      ];
+    }
+
+    if (formData.legal_form === "einzelunternehmen") {
+      return [
+        { value: "articles_of_association", label: "Gewerbeanmeldung" },
+        ...baseTypes,
+      ];
+    }
+
+    return [
+      { value: "commercial_register", label: "Registerauszug" },
+      { value: "articles_of_association", label: "Satzung/Vertrag" },
+      ...baseTypes,
+    ];
+  };
+
+  const toggleDocumentAvailable = (docType: string) => {
+    setAvailableDocuments(prev => 
+      prev.includes(docType) 
+        ? prev.filter(d => d !== docType)
+        : [...prev, docType]
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,6 +155,16 @@ const NewCustomer = () => {
         if (beneficialOwnersData.length > 0) {
           await supabase.from("beneficial_owners").insert(beneficialOwnersData);
         }
+      }
+
+      // Speichere Dokument-Checkliste
+      if (availableDocuments.length > 0) {
+        const checklistData = availableDocuments.map(docType => ({
+          customer_id: customer.id,
+          document_type: docType as "commercial_register" | "transparency_register" | "articles_of_association" | "id_document" | "proof_of_address" | "other",
+          marked_as_available: true,
+        }));
+        await supabase.from("document_checklist").insert(checklistData);
       }
 
       const link = `${window.location.origin}/onboarding/${token}`;
@@ -209,8 +259,9 @@ const NewCustomer = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="company">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="company">Unternehmen</TabsTrigger>
+                <TabsTrigger value="documents">Dokumente</TabsTrigger>
                 <TabsTrigger value="authorized">Vertretungsber.</TabsTrigger>
                 <TabsTrigger value="beneficial">Wirtsch. Ber.</TabsTrigger>
               </TabsList>
@@ -309,6 +360,34 @@ const NewCustomer = () => {
                         placeholder="HRB 12345"
                       />
                     </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="documents" className="space-y-4 mt-6">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Optional: Markieren Sie, welche Dokumente Sie bereits vorliegen haben
+                </p>
+                <div className="space-y-2">
+                  {formData.legal_form && getDocumentTypes().map((docType) => (
+                    <div key={docType.value} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50">
+                      <Checkbox
+                        id={`doc-${docType.value}`}
+                        checked={availableDocuments.includes(docType.value)}
+                        onCheckedChange={() => toggleDocumentAvailable(docType.value)}
+                      />
+                      <label
+                        htmlFor={`doc-${docType.value}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                      >
+                        {docType.label}
+                      </label>
+                    </div>
+                  ))}
+                  {!formData.legal_form && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Bitte wählen Sie zunächst eine Rechtsform aus
+                    </p>
                   )}
                 </div>
               </TabsContent>

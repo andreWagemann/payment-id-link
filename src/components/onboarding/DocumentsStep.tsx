@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Upload, FileText, CheckCircle2 } from "lucide-react";
+import { Upload, FileText, CheckCircle2, Circle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type DocumentsStepProps = {
@@ -24,6 +24,46 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
   const [loading, setLoading] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
   const [selectedType, setSelectedType] = useState<string>("");
+  const [checklist, setChecklist] = useState<Record<string, { required: boolean; uploaded: boolean; markedAvailable: boolean }>>({});
+
+  useEffect(() => {
+    loadChecklist();
+  }, [customerId, legalForm]);
+
+  const loadChecklist = async () => {
+    try {
+      // Lade hochgeladene Dokumente
+      const { data: docs } = await supabase
+        .from("documents")
+        .select("document_type")
+        .eq("customer_id", customerId);
+
+      // Lade vorgemerkte Dokumente
+      const { data: checklistItems } = await supabase
+        .from("document_checklist")
+        .select("document_type, marked_as_available")
+        .eq("customer_id", customerId);
+
+      const requiredDocs = getDocumentTypes();
+      const checklistMap: Record<string, { required: boolean; uploaded: boolean; markedAvailable: boolean }> = {};
+
+      requiredDocs.forEach(docType => {
+        const isUploaded = docs?.some(d => d.document_type === docType.value) || false;
+        const isMarked = checklistItems?.find(c => c.document_type === docType.value)?.marked_as_available || false;
+        
+        checklistMap[docType.value] = {
+          required: true,
+          uploaded: isUploaded,
+          markedAvailable: isMarked,
+        };
+      });
+
+      setChecklist(checklistMap);
+      setUploadedDocs(docs?.map(d => ({ type: d.document_type, fileName: '' })) || []);
+    } catch (error) {
+      console.error("Fehler beim Laden der Checkliste:", error);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,6 +99,10 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
 
       setUploadedDocs([...uploadedDocs, { type: selectedType, fileName: file.name }]);
       setSelectedType("");
+      
+      // Update checklist
+      await loadChecklist();
+      
       toast.success("Dokument hochgeladen");
     } catch (error: any) {
       toast.error("Fehler beim Hochladen");
@@ -119,6 +163,35 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Checkliste der benötigten Dokumente */}
+        <div className="space-y-2">
+          <Label>Erforderliche Dokumente</Label>
+          <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
+            {documentTypes.map((docType) => {
+              const status = checklist[docType.value];
+              const isUploaded = status?.uploaded || false;
+              const isMarkedAvailable = status?.markedAvailable || false;
+              
+              return (
+                <div key={docType.value} className="flex items-center gap-3 p-2">
+                  {isUploaded ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  ) : isMarkedAvailable ? (
+                    <CheckCircle2 className="h-5 w-5 text-amber-500 flex-shrink-0" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  )}
+                  <span className={`text-sm ${isUploaded ? 'text-green-600 font-medium' : isMarkedAvailable ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                    {docType.label}
+                    {isMarkedAvailable && !isUploaded && " (vorgemerkt)"}
+                    {isUploaded && " (hochgeladen)"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Dokumenttyp</Label>

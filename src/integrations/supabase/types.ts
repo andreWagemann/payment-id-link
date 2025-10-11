@@ -189,6 +189,41 @@ export type Database = {
         }
         Relationships: []
       }
+      document_checklist: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          id: string
+          marked_as_available: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          id?: string
+          marked_as_available?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          document_type?: Database["public"]["Enums"]["document_type"]
+          id?: string
+          marked_as_available?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_checklist_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           customer_id: string
