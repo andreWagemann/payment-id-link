@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 type AuthorizedPersonsStepProps = {
   customerId: string;
   onComplete: () => void;
+  onBack?: () => void;
 };
 
 type Person = {
@@ -24,7 +25,7 @@ type Person = {
   city: string;
 };
 
-const AuthorizedPersonsStep = ({ customerId, onComplete }: AuthorizedPersonsStepProps) => {
+const AuthorizedPersonsStep = ({ customerId, onComplete, onBack }: AuthorizedPersonsStepProps) => {
   const [loading, setLoading] = useState(false);
   const [authorizedPersons, setAuthorizedPersons] = useState<Person[]>([
     {
@@ -229,9 +230,16 @@ const AuthorizedPersonsStep = ({ customerId, onComplete }: AuthorizedPersonsStep
             Weitere Person hinzufügen
           </Button>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Wird gespeichert..." : "Weiter"}
-          </Button>
+          <div className="flex gap-2">
+            {onBack && (
+              <Button type="button" variant="outline" onClick={onBack} className="flex-1">
+                Zurück
+              </Button>
+            )}
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? "Wird gespeichert..." : "Weiter"}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

@@ -11,9 +11,10 @@ import SignatureCanvas from "react-signature-canvas";
 type SignatureStepProps = {
   customerId: string;
   onComplete: () => void;
+  onBack?: () => void;
 };
 
-const SignatureStep = ({ customerId, onComplete }: SignatureStepProps) => {
+const SignatureStep = ({ customerId, onComplete, onBack }: SignatureStepProps) => {
   const [loading, setLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
@@ -160,13 +161,20 @@ const SignatureStep = ({ customerId, onComplete }: SignatureStepProps) => {
           </ul>
         </div>
 
-        <Button
-          onClick={handleSubmit}
-          className="w-full"
-          disabled={loading || !termsAccepted || !privacyAccepted}
-        >
-          {loading ? "Wird abgeschlossen..." : "Onboarding abschließen"}
-        </Button>
+        <div className="flex gap-2">
+          {onBack && (
+            <Button variant="outline" onClick={onBack} className="flex-1">
+              Zurück
+            </Button>
+          )}
+          <Button
+            onClick={handleSubmit}
+            className="flex-1"
+            disabled={loading || !termsAccepted || !privacyAccepted}
+          >
+            {loading ? "Wird abgeschlossen..." : "Onboarding abschließen"}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

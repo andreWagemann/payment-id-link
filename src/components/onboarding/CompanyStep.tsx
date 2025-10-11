@@ -9,9 +9,10 @@ import { toast } from "sonner";
 type CompanyStepProps = {
   customer: any;
   onComplete: () => void;
+  onBack?: () => void;
 };
 
-const CompanyStep = ({ customer, onComplete }: CompanyStepProps) => {
+const CompanyStep = ({ customer, onComplete, onBack }: CompanyStepProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     street: customer.street || "",

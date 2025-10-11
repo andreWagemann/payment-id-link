@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 type BeneficialOwnersStepProps = {
   customerId: string;
   onComplete: () => void;
+  onBack?: () => void;
 };
 
 type BeneficialOwner = {
@@ -24,7 +25,7 @@ type BeneficialOwner = {
   ownership_percentage: string;
 };
 
-const BeneficialOwnersStep = ({ customerId, onComplete }: BeneficialOwnersStepProps) => {
+const BeneficialOwnersStep = ({ customerId, onComplete, onBack }: BeneficialOwnersStepProps) => {
   const [loading, setLoading] = useState(false);
   const [beneficialOwners, setBeneficialOwners] = useState<BeneficialOwner[]>([
     {
@@ -235,9 +236,16 @@ const BeneficialOwnersStep = ({ customerId, onComplete }: BeneficialOwnersStepPr
             Weitere Person hinzufügen
           </Button>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Wird gespeichert..." : "Weiter"}
-          </Button>
+          <div className="flex gap-2">
+            {onBack && (
+              <Button type="button" variant="outline" onClick={onBack} className="flex-1">
+                Zurück
+              </Button>
+            )}
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? "Wird gespeichert..." : "Weiter"}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

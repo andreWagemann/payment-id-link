@@ -59,6 +59,10 @@ const Onboarding = () => {
     setCurrentStep((prev) => Math.min(prev + 1, 6));
   };
 
+  const handleStepBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -160,16 +164,33 @@ const Onboarding = () => {
           <CompanyStep customer={customer} onComplete={handleStepComplete} />
         )}
         {currentStep === 2 && (
-          <AuthorizedPersonsStep customerId={customer.id} onComplete={handleStepComplete} />
+          <AuthorizedPersonsStep 
+            customerId={customer.id} 
+            onComplete={handleStepComplete}
+            onBack={handleStepBack}
+          />
         )}
         {currentStep === 3 && (
-          <BeneficialOwnersStep customerId={customer.id} onComplete={handleStepComplete} />
+          <BeneficialOwnersStep 
+            customerId={customer.id} 
+            onComplete={handleStepComplete}
+            onBack={handleStepBack}
+          />
         )}
         {currentStep === 4 && (
-          <DocumentsStep customerId={customer.id} legalForm={customer.legal_form} onComplete={handleStepComplete} />
+          <DocumentsStep 
+            customerId={customer.id} 
+            legalForm={customer.legal_form} 
+            onComplete={handleStepComplete}
+            onBack={handleStepBack}
+          />
         )}
         {currentStep === 5 && (
-          <SignatureStep customerId={customer.id} onComplete={handleStepComplete} />
+          <SignatureStep 
+            customerId={customer.id} 
+            onComplete={handleStepComplete}
+            onBack={handleStepBack}
+          />
         )}
 
         <p className="text-xs text-muted-foreground text-center mt-8">

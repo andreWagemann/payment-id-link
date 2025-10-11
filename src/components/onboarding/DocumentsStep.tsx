@@ -12,6 +12,7 @@ type DocumentsStepProps = {
   customerId: string;
   legalForm?: string;
   onComplete: () => void;
+  onBack?: () => void;
 };
 
 type UploadedDoc = {
@@ -19,7 +20,7 @@ type UploadedDoc = {
   fileName: string;
 };
 
-const DocumentsStep = ({ customerId, legalForm, onComplete }: DocumentsStepProps) => {
+const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsStepProps) => {
   const [loading, setLoading] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
   const [selectedType, setSelectedType] = useState<string>("");
@@ -180,13 +181,20 @@ const DocumentsStep = ({ customerId, legalForm, onComplete }: DocumentsStepProps
           </div>
         )}
 
-        <Button
-          onClick={handleComplete}
-          className="w-full"
-          disabled={loading || uploadedDocs.length === 0}
-        >
-          Weiter
-        </Button>
+        <div className="flex gap-2">
+          {onBack && (
+            <Button variant="outline" onClick={onBack} className="flex-1">
+              Zurück
+            </Button>
+          )}
+          <Button
+            onClick={handleComplete}
+            className="flex-1"
+            disabled={loading || uploadedDocs.length === 0}
+          >
+            Weiter
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
