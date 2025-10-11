@@ -129,21 +129,57 @@ export type Database = {
           },
         ]
       }
-      customer_pricing: {
+      customer_products: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          id: string
+          monthly_rent: number | null
+          product_type: Database["public"]["Enums"]["product_type"]
+          quantity: number
+          setup_fee: number | null
+          shipping_fee: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          monthly_rent?: number | null
+          product_type: Database["public"]["Enums"]["product_type"]
+          quantity?: number
+          setup_fee?: number | null
+          shipping_fee?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          monthly_rent?: number | null
+          product_type?: Database["public"]["Enums"]["product_type"]
+          quantity?: number
+          setup_fee?: number | null
+          shipping_fee?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_products_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_transaction_fees: {
         Row: {
           created_at: string | null
           credit_card_fee_percent: number | null
           customer_id: string
           girocard_fee_percent: number | null
-          has_mobile_terminal: boolean | null
-          has_stationary_terminal: boolean | null
           id: string
-          mobile_monthly_rent: number | null
-          mobile_setup_fee: number | null
-          mobile_shipping_fee: number | null
-          stationary_monthly_rent: number | null
-          stationary_setup_fee: number | null
-          stationary_shipping_fee: number | null
           transaction_fee: number | null
           updated_at: string | null
         }
@@ -152,15 +188,7 @@ export type Database = {
           credit_card_fee_percent?: number | null
           customer_id: string
           girocard_fee_percent?: number | null
-          has_mobile_terminal?: boolean | null
-          has_stationary_terminal?: boolean | null
           id?: string
-          mobile_monthly_rent?: number | null
-          mobile_setup_fee?: number | null
-          mobile_shipping_fee?: number | null
-          stationary_monthly_rent?: number | null
-          stationary_setup_fee?: number | null
-          stationary_shipping_fee?: number | null
           transaction_fee?: number | null
           updated_at?: string | null
         }
@@ -169,21 +197,13 @@ export type Database = {
           credit_card_fee_percent?: number | null
           customer_id?: string
           girocard_fee_percent?: number | null
-          has_mobile_terminal?: boolean | null
-          has_stationary_terminal?: boolean | null
           id?: string
-          mobile_monthly_rent?: number | null
-          mobile_setup_fee?: number | null
-          mobile_shipping_fee?: number | null
-          stationary_monthly_rent?: number | null
-          stationary_setup_fee?: number | null
-          stationary_shipping_fee?: number | null
           transaction_fee?: number | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "customer_pricing_customer_id_fkey"
+            foreignKeyName: "customer_transaction_fees_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: true
             referencedRelation: "customers"
@@ -408,6 +428,11 @@ export type Database = {
         | "ug"
         | "andere"
       onboarding_status: "draft" | "invited" | "in_progress" | "completed"
+      product_type:
+        | "mobile_terminal"
+        | "stationary_terminal"
+        | "softpos"
+        | "ecommerce"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -553,6 +578,12 @@ export const Constants = {
         "andere",
       ],
       onboarding_status: ["draft", "invited", "in_progress", "completed"],
+      product_type: [
+        "mobile_terminal",
+        "stationary_terminal",
+        "softpos",
+        "ecommerce",
+      ],
     },
   },
 } as const
