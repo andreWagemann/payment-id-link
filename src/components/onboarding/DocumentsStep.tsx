@@ -26,6 +26,7 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
   const [selectedType, setSelectedType] = useState<string>("");
   const [checklist, setChecklist] = useState<Record<string, { required: boolean; uploaded: boolean; markedAvailable: boolean; personName?: string }>>({}); 
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+  const [authorizedPersons, setAuthorizedPersons] = useState<Array<{ id: string; first_name: string; last_name: string; country: string }>>([]);
 
   useEffect(() => {
     loadChecklist();
@@ -38,6 +39,8 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
         .from("authorized_persons")
         .select("id, first_name, last_name, country")
         .eq("customer_id", customerId);
+
+      setAuthorizedPersons(authPersons || []);
 
       // Lade hochgeladene Dokumente
       const { data: docs } = await supabase
@@ -107,12 +110,6 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
     const file = e.target.files?.[0];
     if (!file || !selectedType) {
       toast.error("Bitte wählen Sie zunächst einen Dokumenttyp");
-      return;
-    }
-
-    // Prüfe ob ein personenbezogenes Dokument ohne Person-Zuordnung hochgeladen werden soll
-    if ((selectedType === 'id_document' || selectedType === 'proof_of_address') && !selectedPersonId) {
-      toast.error("Bitte wählen Sie die zugehörige Person aus");
       return;
     }
 
@@ -235,21 +232,47 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Dokumenttyp</Label>
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Typ auswählen" />
-              </SelectTrigger>
-              <SelectContent>
-                {documentTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Dokumenttyp</Label>
+              <Select value={selectedType} onValueChange={(value) => {
+                setSelectedType(value);
+                setSelectedPersonId(null);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Typ auswählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {documentTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="id_document">Ausweisdokument</SelectItem>
+                  <SelectItem value="proof_of_address">Adressnachweis</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(selectedType === 'id_document' || selectedType === 'proof_of_address') && (
+              <div className="space-y-2">
+                <Label>Person</Label>
+                <Select value={selectedPersonId || ""} onValueChange={setSelectedPersonId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Person auswählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {authorizedPersons.map((person) => (
+                      <SelectItem key={person.id} value={person.id}>
+                        {person.first_name} {person.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+
 
           <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
             <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -265,11 +288,16 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
               className="hidden"
               onChange={handleFileUpload}
               accept=".pdf,.jpg,.jpeg,.png"
-              disabled={!selectedType || loading}
+              disabled={!selectedType || loading || ((selectedType === 'id_document' || selectedType === 'proof_of_address') && !selectedPersonId)}
             />
             <p className="text-sm text-muted-foreground mt-2">
               PDF, JPG oder PNG (max. 10 MB)
             </p>
+            {(selectedType === 'id_document' || selectedType === 'proof_of_address') && !selectedPersonId && (
+              <p className="text-sm text-amber-600 mt-2">
+                Bitte wählen Sie zuerst eine Person aus
+              </p>
+            )}
           </div>
         </div>
 
