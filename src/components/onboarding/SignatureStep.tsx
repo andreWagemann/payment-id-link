@@ -1,11 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Eraser } from "lucide-react";
+import { Eraser, Euro } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
 
 type SignatureStepProps = {
@@ -19,6 +20,55 @@ const SignatureStep = ({ customerId, onComplete, onBack }: SignatureStepProps) =
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const sigCanvas = useRef<SignatureCanvas>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [cardFees, setCardFees] = useState<any>(null);
+
+  useEffect(() => {
+    loadPricing();
+  }, [customerId]);
+
+  const loadPricing = async () => {
+    try {
+      const { data: productsData } = await supabase
+        .from("customer_products")
+        .select("*")
+        .eq("customer_id", customerId);
+
+      const { data: feesData } = await supabase
+        .from("customer_transaction_fees")
+        .select("*")
+        .eq("customer_id", customerId)
+        .maybeSingle();
+
+      setProducts(productsData || []);
+      setCardFees(feesData);
+    } catch (error) {
+      console.error("Fehler beim Laden der Preise:", error);
+    }
+  };
+
+  const getProductLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      mobile_terminal: "Mobiles Terminal",
+      stationary_terminal: "Stationäres Terminal",
+      softpos: "SOFTPOS",
+      ecommerce: "eCommerce",
+    };
+    return labels[type] || type;
+  };
+
+  const formatCurrency = (value: number | null) => {
+    if (!value) return "0,00 €";
+    return new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency: "EUR",
+    }).format(value);
+  };
+
+  const formatPercent = (value: number | null) => {
+    if (!value) return "0,00 %";
+    return `${value.toFixed(2).replace(".", ",")} %`;
+  };
 
   const clearSignature = () => {
     sigCanvas.current?.clear();
@@ -90,6 +140,101 @@ const SignatureStep = ({ customerId, onComplete, onBack }: SignatureStepProps) =
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Preisübersicht */}
+        {products.length > 0 && (
+          <div className="p-4 border rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2 mb-4">
+              <Euro className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Ihre Preisübersicht</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {products.map((product, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">
+                      {getProductLabel(product.product_type)} 
+                      {product.quantity > 1 && ` (${product.quantity}x)`}
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm pl-4">
+                    {product.monthly_rent && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Monatsmiete:</span>
+                        <span className="font-medium">{formatCurrency(product.monthly_rent)}</span>
+                      </div>
+                    )}
+                    {product.setup_fee && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Einrichtung:</span>
+                        <span className="font-medium">{formatCurrency(product.setup_fee)}</span>
+                      </div>
+                    )}
+                    {product.shipping_fee && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Versand:</span>
+                        <span className="font-medium">{formatCurrency(product.shipping_fee)}</span>
+                      </div>
+                    )}
+                    {product.transaction_fee && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Transaktionspreis:</span>
+                        <span className="font-medium">{formatCurrency(product.transaction_fee)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {index < products.length - 1 && <Separator className="mt-3" />}
+                </div>
+              ))}
+
+              {cardFees && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Kartengebühren</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm pl-4">
+                      {(cardFees.pos_girocard_fee_percent || cardFees.pos_credit_card_fee_percent) && (
+                        <>
+                          <div className="col-span-2 text-xs font-medium text-muted-foreground mt-2">POS-Terminals:</div>
+                          {cardFees.pos_girocard_fee_percent && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Girocard:</span>
+                              <span className="font-medium">{formatPercent(cardFees.pos_girocard_fee_percent)}</span>
+                            </div>
+                          )}
+                          {cardFees.pos_credit_card_fee_percent && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Kreditkarte:</span>
+                              <span className="font-medium">{formatPercent(cardFees.pos_credit_card_fee_percent)}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {(cardFees.ecommerce_girocard_fee_percent || cardFees.ecommerce_credit_card_fee_percent) && (
+                        <>
+                          <div className="col-span-2 text-xs font-medium text-muted-foreground mt-2">eCommerce:</div>
+                          {cardFees.ecommerce_girocard_fee_percent && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Girocard:</span>
+                              <span className="font-medium">{formatPercent(cardFees.ecommerce_girocard_fee_percent)}</span>
+                            </div>
+                          )}
+                          {cardFees.ecommerce_credit_card_fee_percent && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Kreditkarte:</span>
+                              <span className="font-medium">{formatPercent(cardFees.ecommerce_credit_card_fee_percent)}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4">
           <div className="flex items-start gap-3 p-4 bg-muted rounded-lg">
             <Checkbox
