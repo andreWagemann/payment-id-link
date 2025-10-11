@@ -8,6 +8,7 @@ import CompanyStep from "@/components/onboarding/CompanyStep";
 import AuthorizedPersonsStep from "@/components/onboarding/AuthorizedPersonsStep";
 import BeneficialOwnersStep from "@/components/onboarding/BeneficialOwnersStep";
 import DocumentsStep from "@/components/onboarding/DocumentsStep";
+import SEPAMandateStep from "@/components/onboarding/SEPAMandateStep";
 import SignatureStep from "@/components/onboarding/SignatureStep";
 import { Progress } from "@/components/ui/progress";
 
@@ -44,7 +45,7 @@ const Onboarding = () => {
       }
 
       if (data.status === "completed") {
-        setCurrentStep(6);
+        setCurrentStep(7);
       }
 
       setCustomer(data);
@@ -56,7 +57,7 @@ const Onboarding = () => {
   };
 
   const handleStepComplete = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, 6));
+    setCurrentStep((prev) => Math.min(prev + 1, 7));
   };
 
   const handleStepBack = () => {
@@ -88,12 +89,13 @@ const Onboarding = () => {
     { num: 2, label: "Vertretungsber." },
     { num: 3, label: "Wirtsch. Ber." },
     { num: 4, label: "Dokumente" },
-    { num: 5, label: "Unterschrift" },
+    { num: 5, label: "SEPA-Mandat" },
+    { num: 6, label: "Unterschrift" },
   ];
 
-  const progress = ((currentStep - 1) / 5) * 100;
+  const progress = ((currentStep - 1) / 6) * 100;
 
-  if (currentStep === 6) {
+  if (currentStep === 7) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-2xl w-full">
@@ -153,39 +155,47 @@ const Onboarding = () => {
                       currentStep > step.num ? "bg-primary" : "bg-border"
                     }`}
                   />
-                )}
+            )}
               </div>
             ))}
           </div>
           <Progress value={progress} className="h-2" />
         </div>
 
-        {currentStep === 1 && (
+            {currentStep === 1 && (
           <CompanyStep customer={customer} onComplete={handleStepComplete} />
-        )}
-        {currentStep === 2 && (
+            )}
+            {currentStep === 2 && (
           <AuthorizedPersonsStep 
             customerId={customer.id} 
             onComplete={handleStepComplete}
             onBack={handleStepBack}
           />
-        )}
-        {currentStep === 3 && (
+            )}
+            {currentStep === 3 && (
           <BeneficialOwnersStep 
             customerId={customer.id} 
             onComplete={handleStepComplete}
             onBack={handleStepBack}
           />
-        )}
-        {currentStep === 4 && (
+            )}
+            {currentStep === 4 && (
           <DocumentsStep 
             customerId={customer.id} 
             legalForm={customer.legal_form} 
             onComplete={handleStepComplete}
             onBack={handleStepBack}
           />
-        )}
-        {currentStep === 5 && (
+            )}
+            {currentStep === 5 && (
+              <SEPAMandateStep
+                customerId={customer.id}
+                companyName={customer.company_name || ""}
+                onComplete={handleStepComplete}
+                onBack={handleStepBack}
+              />
+            )}
+            {currentStep === 6 && (
           <SignatureStep 
             customerId={customer.id} 
             onComplete={handleStepComplete}

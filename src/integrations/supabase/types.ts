@@ -366,6 +366,59 @@ export type Database = {
           },
         ]
       }
+      sepa_mandates: {
+        Row: {
+          accepted: boolean
+          accepted_at: string | null
+          account_holder: string
+          bank_name: string | null
+          bic: string | null
+          created_at: string | null
+          customer_id: string
+          iban: string
+          id: string
+          mandate_date: string
+          mandate_reference: string
+          updated_at: string | null
+        }
+        Insert: {
+          accepted?: boolean
+          accepted_at?: string | null
+          account_holder: string
+          bank_name?: string | null
+          bic?: string | null
+          created_at?: string | null
+          customer_id: string
+          iban: string
+          id?: string
+          mandate_date?: string
+          mandate_reference: string
+          updated_at?: string | null
+        }
+        Update: {
+          accepted?: boolean
+          accepted_at?: string | null
+          account_holder?: string
+          bank_name?: string | null
+          bic?: string | null
+          created_at?: string | null
+          customer_id?: string
+          iban?: string
+          id?: string
+          mandate_date?: string
+          mandate_reference?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sepa_mandates_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       signatures: {
         Row: {
           customer_id: string
