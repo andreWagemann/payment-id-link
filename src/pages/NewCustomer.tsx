@@ -495,55 +495,59 @@ const NewCustomer = () => {
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-5 gap-4">
-                        <div className="space-y-2">
-                          <Label>Anzahl</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={product.quantity}
-                            onChange={(e) => updateProduct(index, "quantity", parseInt(e.target.value) || 1)}
-                          />
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Anzahl</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={product.quantity}
+                              onChange={(e) => updateProduct(index, "quantity", parseInt(e.target.value) || 1)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Monatsmiete (€)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={product.monthly_rent}
+                              onChange={(e) => updateProduct(index, "monthly_rent", e.target.value)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Transaktionspreis (€)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={product.transaction_fee}
+                              onChange={(e) => updateProduct(index, "transaction_fee", e.target.value)}
+                              placeholder="0.00"
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Monatsmiete (€)</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={product.monthly_rent}
-                            onChange={(e) => updateProduct(index, "monthly_rent", e.target.value)}
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Einrichtung (€)</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={product.setup_fee}
-                            onChange={(e) => updateProduct(index, "setup_fee", e.target.value)}
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Versand (€)</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={product.shipping_fee}
-                            onChange={(e) => updateProduct(index, "shipping_fee", e.target.value)}
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Transaktionspreis (€)</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={product.transaction_fee}
-                            onChange={(e) => updateProduct(index, "transaction_fee", e.target.value)}
-                            placeholder="0.00"
-                          />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Einrichtungsgebühr (€)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={product.setup_fee}
+                              onChange={(e) => updateProduct(index, "setup_fee", e.target.value)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Versandkosten (€)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={product.shipping_fee}
+                              onChange={(e) => updateProduct(index, "shipping_fee", e.target.value)}
+                              placeholder="0.00"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
