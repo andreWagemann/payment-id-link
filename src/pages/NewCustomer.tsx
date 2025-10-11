@@ -89,10 +89,10 @@ const NewCustomer = () => {
 
       if (error) throw error;
 
-      // Speichere optional vorerfasste Personen
+      // Speichere optional vorerfasste Personen (auch unvollständige Daten)
       if (authorizedPersons.length > 0) {
         const authPersonsData = authorizedPersons
-          .filter((p) => p.first_name && p.last_name)
+          .filter((p) => p.first_name || p.last_name || p.email) // Speichern wenn mind. ein Feld ausgefüllt
           .map((p) => ({ customer_id: customer.id, ...p }));
 
         if (authPersonsData.length > 0) {
@@ -102,11 +102,14 @@ const NewCustomer = () => {
 
       if (beneficialOwners.length > 0) {
         const beneficialOwnersData = beneficialOwners
-          .filter((p) => p.first_name && p.last_name)
+          .filter((p) => p.first_name || p.last_name || p.ownership_percentage) // Speichern wenn mind. ein Feld ausgefüllt
           .map((p) => ({
             customer_id: customer.id,
-            ...p,
-            ownership_percentage: parseFloat(p.ownership_percentage) || null,
+            first_name: p.first_name || "",
+            last_name: p.last_name || "",
+            date_of_birth: p.date_of_birth || null,
+            nationality: p.nationality || "DE",
+            ownership_percentage: p.ownership_percentage ? parseFloat(p.ownership_percentage) : null,
           }));
 
         if (beneficialOwnersData.length > 0) {

@@ -64,7 +64,7 @@ const PersonsStep = ({ customerId, onComplete }: PersonsStepProps) => {
 
   const loadExistingPersons = async () => {
     try {
-      // Lade bereits vorerfasste Personen
+      // Lade bereits vorerfasste Personen vom Vertrieb
       const { data: authPersons } = await supabase
         .from("authorized_persons")
         .select("*")
@@ -77,8 +77,8 @@ const PersonsStep = ({ customerId, onComplete }: PersonsStepProps) => {
 
       if (authPersons && authPersons.length > 0) {
         setAuthorizedPersons(authPersons.map((p) => ({
-          first_name: p.first_name,
-          last_name: p.last_name,
+          first_name: p.first_name || "",
+          last_name: p.last_name || "",
           date_of_birth: p.date_of_birth || "",
           nationality: p.nationality || "DE",
           email: p.email || "",
@@ -90,11 +90,11 @@ const PersonsStep = ({ customerId, onComplete }: PersonsStepProps) => {
 
       if (benOwners && benOwners.length > 0) {
         setBeneficialOwners(benOwners.map((p) => ({
-          first_name: p.first_name,
-          last_name: p.last_name,
+          first_name: p.first_name || "",
+          last_name: p.last_name || "",
           date_of_birth: p.date_of_birth || "",
           nationality: p.nationality || "DE",
-          email: "",  // Nicht in DB gespeichert
+          email: "",
           street: p.street || "",
           postal_code: p.postal_code || "",
           city: p.city || "",
