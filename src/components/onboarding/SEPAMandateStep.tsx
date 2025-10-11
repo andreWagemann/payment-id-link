@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 
@@ -21,11 +21,17 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
     iban: "",
     bic: "",
     bank_name: "",
-    account_holder: companyName,
+    account_holder: companyName || "",
+    accepted: false,
   });
-  const [accepted, setAccepted] = useState(false);
+  const [mandateReference, setMandateReference] = useState("");
 
   useEffect(() => {
+    // Generiere Mandatsreferenz
+    const reference = `MAND-${nanoid(10).toUpperCase()}`;
+    setMandateReference(reference);
+
+    // Lade existierendes Mandat falls vorhanden
     loadExistingMandate();
   }, [customerId]);
 
@@ -42,9 +48,10 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
           iban: data.iban || "",
           bic: data.bic || "",
           bank_name: data.bank_name || "",
-          account_holder: data.account_holder || companyName,
+          account_holder: data.account_holder || "",
+          accepted: data.accepted || false,
         });
-        setAccepted(data.accepted || false);
+        setMandateReference(data.mandate_reference);
       }
     } catch (error) {
       console.error("Fehler beim Laden des Mandats:", error);
@@ -52,9 +59,24 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
   };
 
   const formatIBAN = (value: string) => {
+    // Entferne alle Leerzeichen und mache Großbuchstaben
     const cleaned = value.replace(/\s/g, "").toUpperCase();
-    const formatted = cleaned.match(/.{1,4}/g)?.join(" ") || cleaned;
-    return formatted;
+    // Füge alle 4 Zeichen ein Leerzeichen ein
+    return cleaned.match(/.{1,4}/g)?.join(" ") || cleaned;
+  };
+
+  const handleIBANChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatIBAN(e.target.value);
+    setFormData({ ...formData, iban: formatted });
+  };
+
+  const validateIBAN = (iban: string) => {
+    // Einfache IBAN-Validierung (DE hat 22 Zeichen)
+    const cleaned = iban.replace(/\s/g, "");
+    if (cleaned.startsWith("DE")) {
+      return cleaned.length === 22;
+    }
+    return cleaned.length >= 15 && cleaned.length <= 34;
   };
 
   const handleSubmit = async () => {
@@ -63,7 +85,12 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
       return;
     }
 
-    if (!accepted) {
+    if (!validateIBAN(formData.iban)) {
+      toast.error("Bitte geben Sie eine gültige IBAN ein");
+      return;
+    }
+
+    if (!formData.accepted) {
       toast.error("Bitte akzeptieren Sie das SEPA-Lastschriftmandat");
       return;
     }
@@ -71,42 +98,53 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
     setLoading(true);
 
     try {
-      const mandateReference = `MANDATE-${nanoid(10)}`;
-      const cleanedIban = formData.iban.replace(/\s/g, "");
+      const mandateData = {
+        customer_id: customerId,
+        iban: formData.iban.replace(/\s/g, ""),
+        bic: formData.bic || null,
+        bank_name: formData.bank_name || null,
+        account_holder: formData.account_holder,
+        mandate_reference: mandateReference,
+        accepted: formData.accepted,
+        accepted_at: new Date().toISOString(),
+      };
 
       const { error } = await supabase
         .from("sepa_mandates")
-        .upsert([
-          {
-            customer_id: customerId,
-            iban: cleanedIban,
-            bic: formData.bic || null,
-            bank_name: formData.bank_name || null,
-            account_holder: formData.account_holder,
-            mandate_reference: mandateReference,
-            accepted: true,
-            accepted_at: new Date().toISOString(),
-          },
-        ], { onConflict: 'customer_id' });
+        .upsert([mandateData], { onConflict: "customer_id" });
 
       if (error) throw error;
 
       toast.success("SEPA-Mandat gespeichert");
       onComplete();
     } catch (error: any) {
-      toast.error("Fehler beim Speichern des Mandats");
+      toast.error("Fehler beim Speichern");
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
+  const mandateText = `
+SEPA-Lastschriftmandat
+
+Mandatsreferenz: ${mandateReference}
+Gläubiger-Identifikationsnummer: DE98ZZZ09999999999 (Beispiel)
+
+Ich ermächtige Payment AG, Zahlungen von meinem Konto mittels Lastschrift einzuziehen. 
+Zugleich weise ich mein Kreditinstitut an, die von Payment AG auf mein Konto gezogenen 
+Lastschriften einzulösen.
+
+Hinweis: Ich kann innerhalb von acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des 
+belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut vereinbarten Bedingungen.
+  `.trim();
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>SEPA-Lastschriftmandat</CardTitle>
         <CardDescription>
-          Bitte geben Sie Ihre Bankdaten ein und akzeptieren Sie das SEPA-Lastschriftmandat
+          Bitte geben Sie Ihre Bankverbindung ein und akzeptieren Sie das SEPA-Mandat
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -117,6 +155,7 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
               id="account_holder"
               value={formData.account_holder}
               onChange={(e) => setFormData({ ...formData, account_holder: e.target.value })}
+              placeholder="Max Mustermann GmbH"
               required
             />
           </div>
@@ -126,9 +165,8 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
             <Input
               id="iban"
               value={formData.iban}
-              onChange={(e) => setFormData({ ...formData, iban: formatIBAN(e.target.value) })}
+              onChange={handleIBANChange}
               placeholder="DE89 3704 0044 0532 0130 00"
-              maxLength={34}
               required
             />
           </div>
@@ -141,9 +179,9 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
                 value={formData.bic}
                 onChange={(e) => setFormData({ ...formData, bic: e.target.value.toUpperCase() })}
                 placeholder="COBADEFFXXX"
-                maxLength={11}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="bank_name">Bankname (optional)</Label>
               <Input
@@ -156,38 +194,25 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
           </div>
         </div>
 
-        <div className="p-4 bg-muted rounded-lg space-y-4">
-          <h3 className="font-medium">SEPA-Lastschriftmandat</h3>
-          <div className="text-sm space-y-2 text-muted-foreground">
-            <p>
-              Ich ermächtige (Wir ermächtigen) die [Ihr Firmenname], Zahlungen von meinem (unserem) Konto
-              mittels Lastschrift einzuziehen. Zugleich weise ich mein (weisen wir unser) Kreditinstitut an,
-              die von [Ihr Firmenname] auf mein (unser) Konto gezogenen Lastschriften einzulösen.
-            </p>
-            <p className="font-medium">Hinweis:</p>
-            <p>
-              Ich kann (Wir können) innerhalb von acht Wochen, beginnend mit dem Belastungsdatum, die
-              Erstattung des belasteten Betrages verlangen. Es gelten dabei die mit meinem (unserem)
-              Kreditinstitut vereinbarten Bedingungen.
-            </p>
-            <p className="text-xs mt-4">
-              Gläubiger-Identifikationsnummer: [Ihre Gläubiger-ID]<br />
-              Mandatsreferenz: Wird nach Bestätigung automatisch generiert
-            </p>
-          </div>
+        <div className="p-4 bg-muted rounded-lg">
+          <h3 className="font-medium mb-2">SEPA-Lastschriftmandat</h3>
+          <pre className="text-xs whitespace-pre-wrap font-sans text-muted-foreground">
+            {mandateText}
+          </pre>
         </div>
 
         <div className="flex items-start space-x-2">
           <Checkbox
-            id="mandate-accept"
-            checked={accepted}
-            onCheckedChange={(checked) => setAccepted(!!checked)}
+            id="accept-mandate"
+            checked={formData.accepted}
+            onCheckedChange={(checked) => setFormData({ ...formData, accepted: !!checked })}
           />
           <label
-            htmlFor="mandate-accept"
+            htmlFor="accept-mandate"
             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
           >
-            Ich akzeptiere das SEPA-Lastschriftmandat und bestätige die Richtigkeit meiner Angaben *
+            Ich akzeptiere das SEPA-Lastschriftmandat und ermächtige Payment AG, 
+            Zahlungen von meinem Konto mittels Lastschrift einzuziehen.
           </label>
         </div>
 
@@ -200,7 +225,7 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
           <Button
             onClick={handleSubmit}
             className="flex-1"
-            disabled={loading || !accepted || !formData.iban || !formData.account_holder}
+            disabled={loading || !formData.accepted}
           >
             {loading ? "Wird gespeichert..." : "Weiter"}
           </Button>
