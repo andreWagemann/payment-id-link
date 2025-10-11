@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Shield, CheckCircle2 } from "lucide-react";
 import CompanyStep from "@/components/onboarding/CompanyStep";
-import PersonsStep from "@/components/onboarding/PersonsStep";
+import AuthorizedPersonsStep from "@/components/onboarding/AuthorizedPersonsStep";
+import BeneficialOwnersStep from "@/components/onboarding/BeneficialOwnersStep";
 import DocumentsStep from "@/components/onboarding/DocumentsStep";
 import SignatureStep from "@/components/onboarding/SignatureStep";
 import { Progress } from "@/components/ui/progress";
@@ -43,7 +44,7 @@ const Onboarding = () => {
       }
 
       if (data.status === "completed") {
-        setCurrentStep(5);
+        setCurrentStep(6);
       }
 
       setCustomer(data);
@@ -55,7 +56,7 @@ const Onboarding = () => {
   };
 
   const handleStepComplete = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, 5));
+    setCurrentStep((prev) => Math.min(prev + 1, 6));
   };
 
   if (loading) {
@@ -80,14 +81,15 @@ const Onboarding = () => {
 
   const steps = [
     { num: 1, label: "Unternehmen" },
-    { num: 2, label: "Personen" },
-    { num: 3, label: "Dokumente" },
-    { num: 4, label: "Unterschrift" },
+    { num: 2, label: "Vertretungsber." },
+    { num: 3, label: "Wirtsch. Ber." },
+    { num: 4, label: "Dokumente" },
+    { num: 5, label: "Unterschrift" },
   ];
 
-  const progress = ((currentStep - 1) / 4) * 100;
+  const progress = ((currentStep - 1) / 5) * 100;
 
-  if (currentStep === 5) {
+  if (currentStep === 6) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-2xl w-full">
@@ -158,12 +160,15 @@ const Onboarding = () => {
           <CompanyStep customer={customer} onComplete={handleStepComplete} />
         )}
         {currentStep === 2 && (
-          <PersonsStep customerId={customer.id} onComplete={handleStepComplete} />
+          <AuthorizedPersonsStep customerId={customer.id} onComplete={handleStepComplete} />
         )}
         {currentStep === 3 && (
-          <DocumentsStep customerId={customer.id} legalForm={customer.legal_form} onComplete={handleStepComplete} />
+          <BeneficialOwnersStep customerId={customer.id} onComplete={handleStepComplete} />
         )}
         {currentStep === 4 && (
+          <DocumentsStep customerId={customer.id} legalForm={customer.legal_form} onComplete={handleStepComplete} />
+        )}
+        {currentStep === 5 && (
           <SignatureStep customerId={customer.id} onComplete={handleStepComplete} />
         )}
 
