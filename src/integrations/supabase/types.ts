@@ -139,6 +139,7 @@ export type Database = {
           quantity: number
           setup_fee: number | null
           shipping_fee: number | null
+          transaction_fee: number | null
           updated_at: string | null
         }
         Insert: {
@@ -150,6 +151,7 @@ export type Database = {
           quantity?: number
           setup_fee?: number | null
           shipping_fee?: number | null
+          transaction_fee?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -161,6 +163,7 @@ export type Database = {
           quantity?: number
           setup_fee?: number | null
           shipping_fee?: number | null
+          transaction_fee?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -179,11 +182,9 @@ export type Database = {
           customer_id: string
           ecommerce_credit_card_fee_percent: number | null
           ecommerce_girocard_fee_percent: number | null
-          ecommerce_transaction_fee: number | null
           id: string
           pos_credit_card_fee_percent: number | null
           pos_girocard_fee_percent: number | null
-          pos_transaction_fee: number | null
           updated_at: string | null
         }
         Insert: {
@@ -191,11 +192,9 @@ export type Database = {
           customer_id: string
           ecommerce_credit_card_fee_percent?: number | null
           ecommerce_girocard_fee_percent?: number | null
-          ecommerce_transaction_fee?: number | null
           id?: string
           pos_credit_card_fee_percent?: number | null
           pos_girocard_fee_percent?: number | null
-          pos_transaction_fee?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -203,11 +202,9 @@ export type Database = {
           customer_id?: string
           ecommerce_credit_card_fee_percent?: number | null
           ecommerce_girocard_fee_percent?: number | null
-          ecommerce_transaction_fee?: number | null
           id?: string
           pos_credit_card_fee_percent?: number | null
           pos_girocard_fee_percent?: number | null
-          pos_transaction_fee?: number | null
           updated_at?: string | null
         }
         Relationships: [

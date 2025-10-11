@@ -30,6 +30,7 @@ type Product = {
   monthly_rent: string;
   setup_fee: string;
   shipping_fee: string;
+  transaction_fee: string;
 };
 
 const NewCustomer = () => {
@@ -62,11 +63,9 @@ const NewCustomer = () => {
   const [beneficialOwners, setBeneficialOwners] = useState<BeneficialOwner[]>([]);
   const [availableDocuments, setAvailableDocuments] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [transactionFees, setTransactionFees] = useState({
-    pos_transaction_fee: "",
+  const [cardFees, setCardFees] = useState({
     pos_girocard_fee_percent: "",
     pos_credit_card_fee_percent: "",
-    ecommerce_transaction_fee: "",
     ecommerce_girocard_fee_percent: "",
     ecommerce_credit_card_fee_percent: "",
   });
@@ -102,7 +101,7 @@ const NewCustomer = () => {
   };
 
   const addProduct = (type: "mobile_terminal" | "stationary_terminal" | "softpos" | "ecommerce") => {
-    setProducts([...products, { product_type: type, quantity: 1, monthly_rent: "", setup_fee: "", shipping_fee: "" }]);
+    setProducts([...products, { product_type: type, quantity: 1, monthly_rent: "", setup_fee: "", shipping_fee: "", transaction_fee: "" }]);
   };
 
   const removeProduct = (index: number) => {
@@ -221,21 +220,20 @@ const NewCustomer = () => {
           monthly_rent: p.monthly_rent ? parseFloat(p.monthly_rent) : null,
           setup_fee: p.setup_fee ? parseFloat(p.setup_fee) : null,
           shipping_fee: p.shipping_fee ? parseFloat(p.shipping_fee) : null,
+          transaction_fee: p.transaction_fee ? parseFloat(p.transaction_fee) : null,
         }));
         await supabase.from("customer_products").insert(productsData);
       }
 
-      // Speichere Transaktionsgebühren
-      const hasAnyFees = Object.values(transactionFees).some(v => v !== "");
+      // Speichere Kartengebühren
+      const hasAnyFees = Object.values(cardFees).some(v => v !== "");
       if (hasAnyFees) {
         const feesData = {
           customer_id: customer.id,
-          pos_transaction_fee: transactionFees.pos_transaction_fee ? parseFloat(transactionFees.pos_transaction_fee) : null,
-          pos_girocard_fee_percent: transactionFees.pos_girocard_fee_percent ? parseFloat(transactionFees.pos_girocard_fee_percent) : null,
-          pos_credit_card_fee_percent: transactionFees.pos_credit_card_fee_percent ? parseFloat(transactionFees.pos_credit_card_fee_percent) : null,
-          ecommerce_transaction_fee: transactionFees.ecommerce_transaction_fee ? parseFloat(transactionFees.ecommerce_transaction_fee) : null,
-          ecommerce_girocard_fee_percent: transactionFees.ecommerce_girocard_fee_percent ? parseFloat(transactionFees.ecommerce_girocard_fee_percent) : null,
-          ecommerce_credit_card_fee_percent: transactionFees.ecommerce_credit_card_fee_percent ? parseFloat(transactionFees.ecommerce_credit_card_fee_percent) : null,
+          pos_girocard_fee_percent: cardFees.pos_girocard_fee_percent ? parseFloat(cardFees.pos_girocard_fee_percent) : null,
+          pos_credit_card_fee_percent: cardFees.pos_credit_card_fee_percent ? parseFloat(cardFees.pos_credit_card_fee_percent) : null,
+          ecommerce_girocard_fee_percent: cardFees.ecommerce_girocard_fee_percent ? parseFloat(cardFees.ecommerce_girocard_fee_percent) : null,
+          ecommerce_credit_card_fee_percent: cardFees.ecommerce_credit_card_fee_percent ? parseFloat(cardFees.ecommerce_credit_card_fee_percent) : null,
         };
         await supabase.from("customer_transaction_fees").insert([feesData]);
       }
@@ -497,7 +495,7 @@ const NewCustomer = () => {
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-4">
+                      <div className="grid grid-cols-5 gap-4">
                         <div className="space-y-2">
                           <Label>Anzahl</Label>
                           <Input
@@ -537,6 +535,16 @@ const NewCustomer = () => {
                             placeholder="0.00"
                           />
                         </div>
+                        <div className="space-y-2">
+                          <Label>Transaktionspreis (€)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={product.transaction_fee}
+                            onChange={(e) => updateProduct(index, "transaction_fee", e.target.value)}
+                            placeholder="0.00"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -552,24 +560,14 @@ const NewCustomer = () => {
                       <p className="text-sm text-muted-foreground">
                         Gilt für: Mobiles Terminal, Stationäres Terminal, SOFTPOS
                       </p>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label>Transaktionspreis (€)</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={transactionFees.pos_transaction_fee}
-                            onChange={(e) => setTransactionFees({ ...transactionFees, pos_transaction_fee: e.target.value })}
-                            placeholder="0.00"
-                          />
-                        </div>
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Girocard Gebühr (%)</Label>
                           <Input
                             type="number"
                             step="0.01"
-                            value={transactionFees.pos_girocard_fee_percent}
-                            onChange={(e) => setTransactionFees({ ...transactionFees, pos_girocard_fee_percent: e.target.value })}
+                            value={cardFees.pos_girocard_fee_percent}
+                            onChange={(e) => setCardFees({ ...cardFees, pos_girocard_fee_percent: e.target.value })}
                             placeholder="0.00"
                           />
                         </div>
@@ -578,8 +576,8 @@ const NewCustomer = () => {
                           <Input
                             type="number"
                             step="0.01"
-                            value={transactionFees.pos_credit_card_fee_percent}
-                            onChange={(e) => setTransactionFees({ ...transactionFees, pos_credit_card_fee_percent: e.target.value })}
+                            value={cardFees.pos_credit_card_fee_percent}
+                            onChange={(e) => setCardFees({ ...cardFees, pos_credit_card_fee_percent: e.target.value })}
                             placeholder="0.00"
                           />
                         </div>
@@ -598,24 +596,14 @@ const NewCustomer = () => {
                       <p className="text-sm text-muted-foreground">
                         Gilt für: Online-Zahlungen
                       </p>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label>Transaktionspreis (€)</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={transactionFees.ecommerce_transaction_fee}
-                            onChange={(e) => setTransactionFees({ ...transactionFees, ecommerce_transaction_fee: e.target.value })}
-                            placeholder="0.00"
-                          />
-                        </div>
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Girocard Gebühr (%)</Label>
                           <Input
                             type="number"
                             step="0.01"
-                            value={transactionFees.ecommerce_girocard_fee_percent}
-                            onChange={(e) => setTransactionFees({ ...transactionFees, ecommerce_girocard_fee_percent: e.target.value })}
+                            value={cardFees.ecommerce_girocard_fee_percent}
+                            onChange={(e) => setCardFees({ ...cardFees, ecommerce_girocard_fee_percent: e.target.value })}
                             placeholder="0.00"
                           />
                         </div>
@@ -624,8 +612,8 @@ const NewCustomer = () => {
                           <Input
                             type="number"
                             step="0.01"
-                            value={transactionFees.ecommerce_credit_card_fee_percent}
-                            onChange={(e) => setTransactionFees({ ...transactionFees, ecommerce_credit_card_fee_percent: e.target.value })}
+                            value={cardFees.ecommerce_credit_card_fee_percent}
+                            onChange={(e) => setCardFees({ ...cardFees, ecommerce_credit_card_fee_percent: e.target.value })}
                             placeholder="0.00"
                           />
                         </div>
