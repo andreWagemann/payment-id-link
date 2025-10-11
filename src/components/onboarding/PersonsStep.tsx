@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ type BeneficialOwner = Person & {
 
 const PersonsStep = ({ customerId, onComplete }: PersonsStepProps) => {
   const [loading, setLoading] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [authorizedPersons, setAuthorizedPersons] = useState<Person[]>([
     {
       first_name: "",
@@ -57,11 +58,84 @@ const PersonsStep = ({ customerId, onComplete }: PersonsStepProps) => {
     },
   ]);
 
+  useEffect(() => {
+    loadExistingPersons();
+  }, [customerId]);
+
+  const loadExistingPersons = async () => {
+    try {
+      // Lade bereits vorerfasste Personen
+      const { data: authPersons } = await supabase
+        .from("authorized_persons")
+        .select("*")
+        .eq("customer_id", customerId);
+
+      const { data: benOwners } = await supabase
+        .from("beneficial_owners")
+        .select("*")
+        .eq("customer_id", customerId);
+
+      if (authPersons && authPersons.length > 0) {
+        setAuthorizedPersons(authPersons.map((p) => ({
+          first_name: p.first_name,
+          last_name: p.last_name,
+          date_of_birth: p.date_of_birth || "",
+          nationality: p.nationality || "DE",
+          email: p.email || "",
+          street: p.street || "",
+          postal_code: p.postal_code || "",
+          city: p.city || "",
+        })));
+      }
+
+      if (benOwners && benOwners.length > 0) {
+        setBeneficialOwners(benOwners.map((p) => ({
+          first_name: p.first_name,
+          last_name: p.last_name,
+          date_of_birth: p.date_of_birth || "",
+          nationality: p.nationality || "DE",
+          email: "",  // Nicht in DB gespeichert
+          street: p.street || "",
+          postal_code: p.postal_code || "",
+          city: p.city || "",
+          ownership_percentage: p.ownership_percentage?.toString() || "",
+        })));
+      }
+
+      setInitialLoadDone(true);
+    } catch (error) {
+      console.error("Fehler beim Laden der Personen:", error);
+      setInitialLoadDone(true);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validierung: mindestens eine Person muss vollständig ausgefüllt sein
+    const hasValidAuthPerson = authorizedPersons.some(
+      (p) => p.first_name && p.last_name
+    );
+    const hasValidBenOwner = beneficialOwners.some((p) => p.first_name && p.last_name);
+
+    if (!hasValidAuthPerson && !hasValidBenOwner) {
+      toast.error("Bitte geben Sie mindestens eine Person an");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // Lösche alte Einträge und füge neue hinzu
+      await supabase
+        .from("authorized_persons")
+        .delete()
+        .eq("customer_id", customerId);
+
+      await supabase
+        .from("beneficial_owners")
+        .delete()
+        .eq("customer_id", customerId);
       // Speichere vertretungsberechtigte Personen
       const authPersonsData = authorizedPersons
         .filter((p) => p.first_name && p.last_name)
@@ -150,7 +224,9 @@ const PersonsStep = ({ customerId, onComplete }: PersonsStepProps) => {
       <CardHeader>
         <CardTitle>Personen</CardTitle>
         <CardDescription>
-          Geben Sie vertretungsberechtigte Personen und wirtschaftlich Berechtigte an
+          {initialLoadDone && (authorizedPersons.some((p) => p.first_name) || beneficialOwners.some((p) => p.first_name))
+            ? "Überprüfen und vervollständigen Sie die Angaben"
+            : "Geben Sie vertretungsberechtigte Personen und wirtschaftlich Berechtigte an (mindestens eine Person erforderlich)"}
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -6,9 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Copy } from "lucide-react";
+import { ArrowLeft, Copy, Plus, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
+
+type Person = {
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  nationality: string;
+  email: string;
+};
+
+type BeneficialOwner = Person & {
+  ownership_percentage: string;
+};
 
 const NewCustomer = () => {
   const navigate = useNavigate();
@@ -36,6 +49,9 @@ const NewCustomer = () => {
     commercial_register: "",
   });
 
+  const [authorizedPersons, setAuthorizedPersons] = useState<Person[]>([]);
+  const [beneficialOwners, setBeneficialOwners] = useState<BeneficialOwner[]>([]);
+
   const requiresCommercialRegister = () => {
     return ["gmbh", "ag", "ug", "kg", "ohg"].includes(formData.legal_form);
   };
@@ -48,15 +64,15 @@ const NewCustomer = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Nicht angemeldet");
 
-      const token = nanoid(32);
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 Tage gültig
-
       if (!formData.legal_form) {
         throw new Error("Rechtsform muss ausgewählt werden");
       }
 
-      const { data, error } = await supabase
+      const token = nanoid(32);
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const { data: customer, error } = await supabase
         .from("customers")
         .insert([
           {
@@ -73,6 +89,31 @@ const NewCustomer = () => {
 
       if (error) throw error;
 
+      // Speichere optional vorerfasste Personen
+      if (authorizedPersons.length > 0) {
+        const authPersonsData = authorizedPersons
+          .filter((p) => p.first_name && p.last_name)
+          .map((p) => ({ customer_id: customer.id, ...p }));
+
+        if (authPersonsData.length > 0) {
+          await supabase.from("authorized_persons").insert(authPersonsData);
+        }
+      }
+
+      if (beneficialOwners.length > 0) {
+        const beneficialOwnersData = beneficialOwners
+          .filter((p) => p.first_name && p.last_name)
+          .map((p) => ({
+            customer_id: customer.id,
+            ...p,
+            ownership_percentage: parseFloat(p.ownership_percentage) || null,
+          }));
+
+        if (beneficialOwnersData.length > 0) {
+          await supabase.from("beneficial_owners").insert(beneficialOwnersData);
+        }
+      }
+
       const link = `${window.location.origin}/onboarding/${token}`;
       setMagicLink(link);
       toast.success("Kunde erfolgreich angelegt!");
@@ -83,11 +124,33 @@ const NewCustomer = () => {
     }
   };
 
-  const copyLink = () => {
-    if (magicLink) {
-      navigator.clipboard.writeText(magicLink);
-      toast.success("Link kopiert!");
-    }
+  const addAuthorizedPerson = () => {
+    setAuthorizedPersons([
+      ...authorizedPersons,
+      { first_name: "", last_name: "", date_of_birth: "", nationality: "DE", email: "" },
+    ]);
+  };
+
+  const removeAuthorizedPerson = (index: number) => {
+    setAuthorizedPersons(authorizedPersons.filter((_, i) => i !== index));
+  };
+
+  const addBeneficialOwner = () => {
+    setBeneficialOwners([
+      ...beneficialOwners,
+      {
+        first_name: "",
+        last_name: "",
+        date_of_birth: "",
+        nationality: "DE",
+        email: "",
+        ownership_percentage: "",
+      },
+    ]);
+  };
+
+  const removeBeneficialOwner = (index: number) => {
+    setBeneficialOwners(beneficialOwners.filter((_, i) => i !== index));
   };
 
   if (magicLink) {
@@ -106,7 +169,7 @@ const NewCustomer = () => {
                 {magicLink}
               </div>
               <div className="flex gap-2">
-                <Button onClick={copyLink} className="flex-1">
+                <Button onClick={() => { navigator.clipboard.writeText(magicLink); toast.success("Link kopiert!"); }} className="flex-1">
                   <Copy className="h-4 w-4 mr-2" />
                   Link kopieren
                 </Button>
@@ -138,109 +201,292 @@ const NewCustomer = () => {
           <CardHeader>
             <CardTitle>Neuen Kunden anlegen</CardTitle>
             <CardDescription>
-              Erfassen Sie die Basisangaben des Unternehmens
+              Erfassen Sie die Basisangaben und optional bereits bekannte Personen
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="company_name">Unternehmensname *</Label>
-                <Input
-                  id="company_name"
-                  value={formData.company_name}
-                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                  required
-                />
-              </div>
+            <Tabs defaultValue="company">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="company">Unternehmen</TabsTrigger>
+                <TabsTrigger value="authorized">Vertretungsber.</TabsTrigger>
+                <TabsTrigger value="beneficial">Wirtsch. Ber.</TabsTrigger>
+              </TabsList>
 
-              <div className="space-y-2">
-                <Label htmlFor="legal_form">Rechtsform *</Label>
-                <Select
-                  value={formData.legal_form}
-                  onValueChange={(value) => setFormData({ ...formData, legal_form: value as any })}
-                  required
+              <TabsContent value="company">
+                <div className="space-y-6 mt-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="company_name">Unternehmensname *</Label>
+                    <Input
+                      id="company_name"
+                      value={formData.company_name}
+                      onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="legal_form">Rechtsform *</Label>
+                    <Select
+                      value={formData.legal_form}
+                      onValueChange={(value) => setFormData({ ...formData, legal_form: value as any })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Rechtsform wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gmbh">GmbH</SelectItem>
+                        <SelectItem value="ag">AG</SelectItem>
+                        <SelectItem value="ug">UG (haftungsbeschränkt)</SelectItem>
+                        <SelectItem value="einzelunternehmen">Einzelunternehmen</SelectItem>
+                        <SelectItem value="ohg">OHG</SelectItem>
+                        <SelectItem value="kg">KG</SelectItem>
+                        <SelectItem value="andere">Andere</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="street">Straße</Label>
+                      <Input
+                        id="street"
+                        value={formData.street}
+                        onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="postal_code">PLZ</Label>
+                      <Input
+                        id="postal_code"
+                        value={formData.postal_code}
+                        onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Stadt</Label>
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tax_id">Steuernummer</Label>
+                    <Input
+                      id="tax_id"
+                      value={formData.tax_id}
+                      onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+                      placeholder="Optional"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="vat_id">Umsatzsteuer-Identifikationsnummer (USt-IdNr.)</Label>
+                    <Input
+                      id="vat_id"
+                      value={formData.vat_id}
+                      onChange={(e) => setFormData({ ...formData, vat_id: e.target.value })}
+                      placeholder="DE123456789 (optional)"
+                    />
+                  </div>
+
+                  {requiresCommercialRegister() && (
+                    <div className="space-y-2">
+                      <Label htmlFor="commercial_register">Handelsregisternummer</Label>
+                      <Input
+                        id="commercial_register"
+                        value={formData.commercial_register}
+                        onChange={(e) =>
+                          setFormData({ ...formData, commercial_register: e.target.value })
+                        }
+                        placeholder="HRB 12345"
+                      />
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="authorized" className="space-y-4 mt-6">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Optional: Erfassen Sie bereits bekannte vertretungsberechtigte Personen
+                </p>
+                {authorizedPersons.map((person, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">Person {index + 1}</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeAuthorizedPerson(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Vorname</Label>
+                        <Input
+                          value={person.first_name}
+                          onChange={(e) => {
+                            const updated = [...authorizedPersons];
+                            updated[index].first_name = e.target.value;
+                            setAuthorizedPersons(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nachname</Label>
+                        <Input
+                          value={person.last_name}
+                          onChange={(e) => {
+                            const updated = [...authorizedPersons];
+                            updated[index].last_name = e.target.value;
+                            setAuthorizedPersons(updated);
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Geburtsdatum</Label>
+                        <Input
+                          type="date"
+                          value={person.date_of_birth}
+                          onChange={(e) => {
+                            const updated = [...authorizedPersons];
+                            updated[index].date_of_birth = e.target.value;
+                            setAuthorizedPersons(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>E-Mail</Label>
+                        <Input
+                          type="email"
+                          value={person.email}
+                          onChange={(e) => {
+                            const updated = [...authorizedPersons];
+                            updated[index].email = e.target.value;
+                            setAuthorizedPersons(updated);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addAuthorizedPerson}
+                  className="w-full"
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Rechtsform wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gmbh">GmbH</SelectItem>
-                    <SelectItem value="ag">AG</SelectItem>
-                    <SelectItem value="ug">UG (haftungsbeschränkt)</SelectItem>
-                    <SelectItem value="einzelunternehmen">Einzelunternehmen</SelectItem>
-                    <SelectItem value="ohg">OHG</SelectItem>
-                    <SelectItem value="kg">KG</SelectItem>
-                    <SelectItem value="andere">Andere</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Person hinzufügen
+                </Button>
+              </TabsContent>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="street">Straße</Label>
-                  <Input
-                    id="street"
-                    value={formData.street}
-                    onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="postal_code">PLZ</Label>
-                  <Input
-                    id="postal_code"
-                    value={formData.postal_code}
-                    onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
-                  />
-                </div>
-              </div>
+              <TabsContent value="beneficial" className="space-y-4 mt-6">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Optional: Erfassen Sie bereits bekannte wirtschaftlich Berechtigte
+                </p>
+                {beneficialOwners.map((owner, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">Person {index + 1}</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeBeneficialOwner(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="city">Stadt</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                />
-              </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Vorname</Label>
+                        <Input
+                          value={owner.first_name}
+                          onChange={(e) => {
+                            const updated = [...beneficialOwners];
+                            updated[index].first_name = e.target.value;
+                            setBeneficialOwners(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nachname</Label>
+                        <Input
+                          value={owner.last_name}
+                          onChange={(e) => {
+                            const updated = [...beneficialOwners];
+                            updated[index].last_name = e.target.value;
+                            setBeneficialOwners(updated);
+                          }}
+                        />
+                      </div>
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="tax_id">Steuernummer</Label>
-                <Input
-                  id="tax_id"
-                  value={formData.tax_id}
-                  onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
-                  placeholder="Optional"
-                />
-              </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Geburtsdatum</Label>
+                        <Input
+                          type="date"
+                          value={owner.date_of_birth}
+                          onChange={(e) => {
+                            const updated = [...beneficialOwners];
+                            updated[index].date_of_birth = e.target.value;
+                            setBeneficialOwners(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Beteiligung (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={owner.ownership_percentage}
+                          onChange={(e) => {
+                            const updated = [...beneficialOwners];
+                            updated[index].ownership_percentage = e.target.value;
+                            setBeneficialOwners(updated);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
 
-              <div className="space-y-2">
-                <Label htmlFor="vat_id">Umsatzsteuer-Identifikationsnummer (USt-IdNr.)</Label>
-                <Input
-                  id="vat_id"
-                  value={formData.vat_id}
-                  onChange={(e) => setFormData({ ...formData, vat_id: e.target.value })}
-                  placeholder="DE123456789 (optional)"
-                />
-              </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addBeneficialOwner}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Person hinzufügen
+                </Button>
+              </TabsContent>
+            </Tabs>
 
-              {requiresCommercialRegister() && (
-                <div className="space-y-2">
-                  <Label htmlFor="commercial_register">Handelsregisternummer</Label>
-                  <Input
-                    id="commercial_register"
-                    value={formData.commercial_register}
-                    onChange={(e) =>
-                      setFormData({ ...formData, commercial_register: e.target.value })
-                    }
-                    placeholder="HRB 12345"
-                  />
-                </div>
-              )}
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Wird angelegt..." : "Kunde anlegen & Link generieren"}
-              </Button>
-            </form>
+            <Button
+              onClick={handleSubmit}
+              className="w-full mt-6"
+              disabled={loading}
+            >
+              {loading ? "Wird angelegt..." : "Kunde anlegen & Link generieren"}
+            </Button>
           </CardContent>
         </Card>
       </div>
