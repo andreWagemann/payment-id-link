@@ -147,6 +147,7 @@ export type Database = {
           street: string | null
           tax_id: string | null
           updated_at: string
+          vat_id: string | null
         }
         Insert: {
           city?: string | null
@@ -165,6 +166,7 @@ export type Database = {
           street?: string | null
           tax_id?: string | null
           updated_at?: string
+          vat_id?: string | null
         }
         Update: {
           city?: string | null
@@ -183,6 +185,7 @@ export type Database = {
           street?: string | null
           tax_id?: string | null
           updated_at?: string
+          vat_id?: string | null
         }
         Relationships: []
       }

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type DocumentsStepProps = {
   customerId: string;
+  legalForm?: string;
   onComplete: () => void;
 };
 
@@ -18,7 +19,7 @@ type UploadedDoc = {
   fileName: string;
 };
 
-const DocumentsStep = ({ customerId, onComplete }: DocumentsStepProps) => {
+const DocumentsStep = ({ customerId, legalForm, onComplete }: DocumentsStepProps) => {
   const [loading, setLoading] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
   const [selectedType, setSelectedType] = useState<string>("");
@@ -73,14 +74,40 @@ const DocumentsStep = ({ customerId, onComplete }: DocumentsStepProps) => {
     onComplete();
   };
 
-  const documentTypes = [
-    { value: "commercial_register", label: "Handelsregisterauszug" },
-    { value: "transparency_register", label: "Transparenzregister" },
-    { value: "articles_of_association", label: "Gesellschaftsvertrag" },
-    { value: "id_document", label: "Ausweisdokument" },
-    { value: "proof_of_address", label: "Adressnachweis" },
-    { value: "other", label: "Sonstiges" },
-  ];
+  const getDocumentTypes = () => {
+    const baseTypes = [
+      { value: "id_document", label: "Ausweisdokument" },
+      { value: "proof_of_address", label: "Adressnachweis" },
+      { value: "other", label: "Sonstiges" },
+    ];
+
+    // GmbH, AG, UG, KG, OHG → Handelsregister
+    if (["gmbh", "ag", "ug", "kg", "ohg"].includes(legalForm || "")) {
+      return [
+        { value: "commercial_register", label: "Handelsregisterauszug" },
+        { value: "transparency_register", label: "Transparenzregister" },
+        { value: "articles_of_association", label: "Gesellschaftsvertrag" },
+        ...baseTypes,
+      ];
+    }
+
+    // Einzelunternehmen → Kein Register
+    if (legalForm === "einzelunternehmen") {
+      return [
+        { value: "articles_of_association", label: "Gewerbeanmeldung" },
+        ...baseTypes,
+      ];
+    }
+
+    // Andere (z.B. Verein) → Vereinsregister
+    return [
+      { value: "commercial_register", label: "Registerauszug" },
+      { value: "articles_of_association", label: "Satzung/Vertrag" },
+      ...baseTypes,
+    ];
+  };
+
+  const documentTypes = getDocumentTypes();
 
   return (
     <Card>

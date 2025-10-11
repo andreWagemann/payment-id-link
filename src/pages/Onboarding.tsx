@@ -161,7 +161,7 @@ const Onboarding = () => {
           <PersonsStep customerId={customer.id} onComplete={handleStepComplete} />
         )}
         {currentStep === 3 && (
-          <DocumentsStep customerId={customer.id} onComplete={handleStepComplete} />
+          <DocumentsStep customerId={customer.id} legalForm={customer.legal_form} onComplete={handleStepComplete} />
         )}
         {currentStep === 4 && (
           <SignatureStep customerId={customer.id} onComplete={handleStepComplete} />

@@ -18,8 +18,13 @@ const CompanyStep = ({ customer, onComplete }: CompanyStepProps) => {
     postal_code: customer.postal_code || "",
     city: customer.city || "",
     tax_id: customer.tax_id || "",
+    vat_id: customer.vat_id || "",
     commercial_register: customer.commercial_register || "",
   });
+
+  const requiresCommercialRegister = () => {
+    return ["gmbh", "ag", "ug", "kg", "ohg"].includes(customer.legal_form);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,17 +97,33 @@ const CompanyStep = ({ customer, onComplete }: CompanyStepProps) => {
               id="tax_id"
               value={formData.tax_id}
               onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+              placeholder="Optional"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="commercial_register">Handelsregisternummer</Label>
+            <Label htmlFor="vat_id">Umsatzsteuer-Identifikationsnummer (USt-IdNr.)</Label>
             <Input
-              id="commercial_register"
-              value={formData.commercial_register}
-              onChange={(e) => setFormData({ ...formData, commercial_register: e.target.value })}
+              id="vat_id"
+              value={formData.vat_id}
+              onChange={(e) => setFormData({ ...formData, vat_id: e.target.value })}
+              placeholder="DE123456789 (optional)"
             />
           </div>
+
+          {requiresCommercialRegister() && (
+            <div className="space-y-2">
+              <Label htmlFor="commercial_register">
+                {customer.legal_form === "andere" ? "Registernummer" : "Handelsregisternummer"}
+              </Label>
+              <Input
+                id="commercial_register"
+                value={formData.commercial_register}
+                onChange={(e) => setFormData({ ...formData, commercial_register: e.target.value })}
+                placeholder="HRB 12345"
+              />
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Wird gespeichert..." : "Weiter"}
