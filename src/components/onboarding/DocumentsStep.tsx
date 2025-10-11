@@ -24,7 +24,8 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
   const [loading, setLoading] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
   const [selectedType, setSelectedType] = useState<string>("");
-  const [checklist, setChecklist] = useState<Record<string, { required: boolean; uploaded: boolean; markedAvailable: boolean }>>({});
+  const [checklist, setChecklist] = useState<Record<string, { required: boolean; uploaded: boolean; markedAvailable: boolean; personName?: string }>>({}); 
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
 
   useEffect(() => {
     loadChecklist();
@@ -32,24 +33,31 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
 
   const loadChecklist = async () => {
     try {
+      // Lade vertretungsberechtigte Personen
+      const { data: authPersons } = await supabase
+        .from("authorized_persons")
+        .select("id, first_name, last_name, country")
+        .eq("customer_id", customerId);
+
       // Lade hochgeladene Dokumente
       const { data: docs } = await supabase
         .from("documents")
-        .select("document_type")
+        .select("document_type, person_id")
         .eq("customer_id", customerId);
 
       // Lade vorgemerkte Dokumente
       const { data: checklistItems } = await supabase
         .from("document_checklist")
-        .select("document_type, marked_as_available")
+        .select("document_type, marked_as_available, person_id")
         .eq("customer_id", customerId);
 
-      const requiredDocs = getDocumentTypes();
-      const checklistMap: Record<string, { required: boolean; uploaded: boolean; markedAvailable: boolean }> = {};
+      const checklistMap: Record<string, { required: boolean; uploaded: boolean; markedAvailable: boolean; personName?: string }> = {};
 
-      requiredDocs.forEach(docType => {
-        const isUploaded = docs?.some(d => d.document_type === docType.value) || false;
-        const isMarked = checklistItems?.find(c => c.document_type === docType.value)?.marked_as_available || false;
+      // Unternehmensdokumente basierend auf Rechtsform
+      const companyDocs = getDocumentTypes();
+      companyDocs.forEach(docType => {
+        const isUploaded = docs?.some(d => d.document_type === docType.value && !d.person_id) || false;
+        const isMarked = checklistItems?.find(c => c.document_type === docType.value && !c.person_id)?.marked_as_available || false;
         
         checklistMap[docType.value] = {
           required: true,
@@ -58,8 +66,38 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
         };
       });
 
+      // Personenbezogene Dokumente (Ausweise und Adressnachweise)
+      authPersons?.forEach(person => {
+        const personName = `${person.first_name} ${person.last_name}`.trim();
+        const personKey = `id_document_${person.id}`;
+        
+        // Ausweis für jede Person
+        const idUploaded = docs?.some(d => d.document_type === 'id_document' && d.person_id === person.id) || false;
+        const idMarked = checklistItems?.find(c => c.document_type === 'id_document' && c.person_id === person.id)?.marked_as_available || false;
+        
+        checklistMap[personKey] = {
+          required: true,
+          uploaded: idUploaded,
+          markedAvailable: idMarked,
+          personName: `Ausweis - ${personName}`,
+        };
+
+        // Adressnachweis nur wenn Person außerhalb Deutschlands
+        if (person.country && person.country !== 'DE') {
+          const addressKey = `proof_of_address_${person.id}`;
+          const addressUploaded = docs?.some(d => d.document_type === 'proof_of_address' && d.person_id === person.id) || false;
+          const addressMarked = checklistItems?.find(c => c.document_type === 'proof_of_address' && c.person_id === person.id)?.marked_as_available || false;
+          
+          checklistMap[addressKey] = {
+            required: true,
+            uploaded: addressUploaded,
+            markedAvailable: addressMarked,
+            personName: `Adressnachweis - ${personName}`,
+          };
+        }
+      });
+
       setChecklist(checklistMap);
-      setUploadedDocs(docs?.map(d => ({ type: d.document_type, fileName: '' })) || []);
     } catch (error) {
       console.error("Fehler beim Laden der Checkliste:", error);
     }
@@ -69,6 +107,12 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
     const file = e.target.files?.[0];
     if (!file || !selectedType) {
       toast.error("Bitte wählen Sie zunächst einen Dokumenttyp");
+      return;
+    }
+
+    // Prüfe ob ein personenbezogenes Dokument ohne Person-Zuordnung hochgeladen werden soll
+    if ((selectedType === 'id_document' || selectedType === 'proof_of_address') && !selectedPersonId) {
+      toast.error("Bitte wählen Sie die zugehörige Person aus");
       return;
     }
 
@@ -92,6 +136,7 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
           file_path: fileName,
           file_size: file.size,
           mime_type: file.type,
+          person_id: selectedPersonId,
         },
       ]);
 
@@ -99,6 +144,7 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
 
       setUploadedDocs([...uploadedDocs, { type: selectedType, fileName: file.name }]);
       setSelectedType("");
+      setSelectedPersonId(null);
       
       // Update checklist
       await loadChecklist();
@@ -121,22 +167,19 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
 
   const getDocumentTypes = () => {
     const baseTypes = [
-      { value: "id_document", label: "Ausweisdokument" },
-      { value: "proof_of_address", label: "Adressnachweis" },
       { value: "other", label: "Sonstiges" },
     ];
 
-    // GmbH, AG, UG, KG, OHG → Handelsregister
+    // GmbH, AG, UG, KG, OHG → Handelsregister + Transparenzregister
     if (["gmbh", "ag", "ug", "kg", "ohg"].includes(legalForm || "")) {
       return [
         { value: "commercial_register", label: "Handelsregisterauszug" },
         { value: "transparency_register", label: "Transparenzregister" },
-        { value: "articles_of_association", label: "Gesellschaftsvertrag" },
         ...baseTypes,
       ];
     }
 
-    // Einzelunternehmen → Kein Register
+    // Einzelunternehmen → Gewerbeanmeldung
     if (legalForm === "einzelunternehmen") {
       return [
         { value: "articles_of_association", label: "Gewerbeanmeldung" },
@@ -144,10 +187,9 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
       ];
     }
 
-    // Andere (z.B. Verein) → Vereinsregister
+    // Andere (z.B. Verein) → Registerauszug
     return [
       { value: "commercial_register", label: "Registerauszug" },
-      { value: "articles_of_association", label: "Satzung/Vertrag" },
       ...baseTypes,
     ];
   };
@@ -167,13 +209,13 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
         <div className="space-y-2">
           <Label>Erforderliche Dokumente</Label>
           <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
-            {documentTypes.map((docType) => {
-              const status = checklist[docType.value];
-              const isUploaded = status?.uploaded || false;
-              const isMarkedAvailable = status?.markedAvailable || false;
+            {Object.entries(checklist).map(([key, status]) => {
+              const isUploaded = status.uploaded;
+              const isMarkedAvailable = status.markedAvailable;
+              const displayName = status.personName || documentTypes.find(dt => dt.value === key)?.label || key;
               
               return (
-                <div key={docType.value} className="flex items-center gap-3 p-2">
+                <div key={key} className="flex items-center gap-3 p-2">
                   {isUploaded ? (
                     <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
                   ) : isMarkedAvailable ? (
@@ -182,7 +224,7 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
                     <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   )}
                   <span className={`text-sm ${isUploaded ? 'text-green-600 font-medium' : isMarkedAvailable ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                    {docType.label}
+                    {displayName}
                     {isMarkedAvailable && !isUploaded && " (vorgemerkt)"}
                     {isUploaded && " (hochgeladen)"}
                   </span>

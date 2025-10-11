@@ -196,6 +196,7 @@ export type Database = {
           document_type: Database["public"]["Enums"]["document_type"]
           id: string
           marked_as_available: boolean | null
+          person_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -204,6 +205,7 @@ export type Database = {
           document_type: Database["public"]["Enums"]["document_type"]
           id?: string
           marked_as_available?: boolean | null
+          person_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -212,6 +214,7 @@ export type Database = {
           document_type?: Database["public"]["Enums"]["document_type"]
           id?: string
           marked_as_available?: boolean | null
+          person_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -220,6 +223,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_checklist_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "authorized_persons"
             referencedColumns: ["id"]
           },
         ]

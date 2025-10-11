@@ -60,8 +60,6 @@ const NewCustomer = () => {
 
   const getDocumentTypes = () => {
     const baseTypes = [
-      { value: "id_document", label: "Ausweisdokument" },
-      { value: "proof_of_address", label: "Adressnachweis" },
       { value: "other", label: "Sonstiges" },
     ];
 
@@ -69,7 +67,6 @@ const NewCustomer = () => {
       return [
         { value: "commercial_register", label: "Handelsregisterauszug" },
         { value: "transparency_register", label: "Transparenzregister" },
-        { value: "articles_of_association", label: "Gesellschaftsvertrag" },
         ...baseTypes,
       ];
     }
@@ -83,7 +80,6 @@ const NewCustomer = () => {
 
     return [
       { value: "commercial_register", label: "Registerauszug" },
-      { value: "articles_of_association", label: "Satzung/Vertrag" },
       ...baseTypes,
     ];
   };
