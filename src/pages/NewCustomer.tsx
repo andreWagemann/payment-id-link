@@ -53,6 +53,19 @@ const NewCustomer = () => {
   const [authorizedPersons, setAuthorizedPersons] = useState<Person[]>([]);
   const [beneficialOwners, setBeneficialOwners] = useState<BeneficialOwner[]>([]);
   const [availableDocuments, setAvailableDocuments] = useState<string[]>([]);
+  const [pricing, setPricing] = useState({
+    has_mobile_terminal: false,
+    has_stationary_terminal: false,
+    mobile_monthly_rent: "",
+    mobile_setup_fee: "",
+    mobile_shipping_fee: "",
+    stationary_monthly_rent: "",
+    stationary_setup_fee: "",
+    stationary_shipping_fee: "",
+    transaction_fee: "",
+    girocard_fee_percent: "",
+    credit_card_fee_percent: "",
+  });
 
   const requiresCommercialRegister = () => {
     return ["gmbh", "ag", "ug", "kg", "ohg"].includes(formData.legal_form);
@@ -163,6 +176,25 @@ const NewCustomer = () => {
         await supabase.from("document_checklist").insert(checklistData);
       }
 
+      // Speichere Pricing (nur wenn mindestens ein Terminal gewählt wurde)
+      if (pricing.has_mobile_terminal || pricing.has_stationary_terminal) {
+        const pricingData = {
+          customer_id: customer.id,
+          has_mobile_terminal: pricing.has_mobile_terminal,
+          has_stationary_terminal: pricing.has_stationary_terminal,
+          mobile_monthly_rent: pricing.mobile_monthly_rent ? parseFloat(pricing.mobile_monthly_rent) : null,
+          mobile_setup_fee: pricing.mobile_setup_fee ? parseFloat(pricing.mobile_setup_fee) : null,
+          mobile_shipping_fee: pricing.mobile_shipping_fee ? parseFloat(pricing.mobile_shipping_fee) : null,
+          stationary_monthly_rent: pricing.stationary_monthly_rent ? parseFloat(pricing.stationary_monthly_rent) : null,
+          stationary_setup_fee: pricing.stationary_setup_fee ? parseFloat(pricing.stationary_setup_fee) : null,
+          stationary_shipping_fee: pricing.stationary_shipping_fee ? parseFloat(pricing.stationary_shipping_fee) : null,
+          transaction_fee: pricing.transaction_fee ? parseFloat(pricing.transaction_fee) : null,
+          girocard_fee_percent: pricing.girocard_fee_percent ? parseFloat(pricing.girocard_fee_percent) : null,
+          credit_card_fee_percent: pricing.credit_card_fee_percent ? parseFloat(pricing.credit_card_fee_percent) : null,
+        };
+        await supabase.from("customer_pricing").insert([pricingData]);
+      }
+
       const link = `${window.location.origin}/onboarding/${token}`;
       setMagicLink(link);
       toast.success("Kunde erfolgreich angelegt!");
@@ -255,8 +287,9 @@ const NewCustomer = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="company">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="company">Unternehmen</TabsTrigger>
+                <TabsTrigger value="pricing">Preise</TabsTrigger>
                 <TabsTrigger value="documents">Dokumente</TabsTrigger>
                 <TabsTrigger value="authorized">Vertretungsber.</TabsTrigger>
                 <TabsTrigger value="beneficial">Wirtsch. Ber.</TabsTrigger>
@@ -358,6 +391,152 @@ const NewCustomer = () => {
                     </div>
                   )}
                 </div>
+              </TabsContent>
+
+              <TabsContent value="pricing" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="font-medium">Terminaltyp</h3>
+                  <div className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="mobile-terminal"
+                        checked={pricing.has_mobile_terminal}
+                        onCheckedChange={(checked) => 
+                          setPricing({ ...pricing, has_mobile_terminal: !!checked })
+                        }
+                      />
+                      <label htmlFor="mobile-terminal" className="text-sm font-medium cursor-pointer">
+                        Mobiles Terminal
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="stationary-terminal"
+                        checked={pricing.has_stationary_terminal}
+                        onCheckedChange={(checked) => 
+                          setPricing({ ...pricing, has_stationary_terminal: !!checked })
+                        }
+                      />
+                      <label htmlFor="stationary-terminal" className="text-sm font-medium cursor-pointer">
+                        Stationäres Terminal
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {pricing.has_mobile_terminal && (
+                  <div className="space-y-4 p-4 border rounded-lg">
+                    <h3 className="font-medium">Mobiles Terminal - Preise</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Monatsmiete (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={pricing.mobile_monthly_rent}
+                          onChange={(e) => setPricing({ ...pricing, mobile_monthly_rent: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Einrichtungspauschale (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={pricing.mobile_setup_fee}
+                          onChange={(e) => setPricing({ ...pricing, mobile_setup_fee: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Versandkosten (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={pricing.mobile_shipping_fee}
+                          onChange={(e) => setPricing({ ...pricing, mobile_shipping_fee: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {pricing.has_stationary_terminal && (
+                  <div className="space-y-4 p-4 border rounded-lg">
+                    <h3 className="font-medium">Stationäres Terminal - Preise</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Monatsmiete (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={pricing.stationary_monthly_rent}
+                          onChange={(e) => setPricing({ ...pricing, stationary_monthly_rent: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Einrichtungspauschale (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={pricing.stationary_setup_fee}
+                          onChange={(e) => setPricing({ ...pricing, stationary_setup_fee: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Versandkosten (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={pricing.stationary_shipping_fee}
+                          onChange={(e) => setPricing({ ...pricing, stationary_shipping_fee: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {(pricing.has_mobile_terminal || pricing.has_stationary_terminal) && (
+                  <div className="space-y-4 p-4 border rounded-lg">
+                    <h3 className="font-medium">Transaktionsgebühren</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Transaktionspreis (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={pricing.transaction_fee}
+                          onChange={(e) => setPricing({ ...pricing, transaction_fee: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Girocard Gebühr (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={pricing.girocard_fee_percent}
+                          onChange={(e) => setPricing({ ...pricing, girocard_fee_percent: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Kreditkarten Gebühr (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={pricing.credit_card_fee_percent}
+                          onChange={(e) => setPricing({ ...pricing, credit_card_fee_percent: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="documents" className="space-y-4 mt-6">

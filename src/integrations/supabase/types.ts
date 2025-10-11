@@ -129,6 +129,68 @@ export type Database = {
           },
         ]
       }
+      customer_pricing: {
+        Row: {
+          created_at: string | null
+          credit_card_fee_percent: number | null
+          customer_id: string
+          girocard_fee_percent: number | null
+          has_mobile_terminal: boolean | null
+          has_stationary_terminal: boolean | null
+          id: string
+          mobile_monthly_rent: number | null
+          mobile_setup_fee: number | null
+          mobile_shipping_fee: number | null
+          stationary_monthly_rent: number | null
+          stationary_setup_fee: number | null
+          stationary_shipping_fee: number | null
+          transaction_fee: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credit_card_fee_percent?: number | null
+          customer_id: string
+          girocard_fee_percent?: number | null
+          has_mobile_terminal?: boolean | null
+          has_stationary_terminal?: boolean | null
+          id?: string
+          mobile_monthly_rent?: number | null
+          mobile_setup_fee?: number | null
+          mobile_shipping_fee?: number | null
+          stationary_monthly_rent?: number | null
+          stationary_setup_fee?: number | null
+          stationary_shipping_fee?: number | null
+          transaction_fee?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credit_card_fee_percent?: number | null
+          customer_id?: string
+          girocard_fee_percent?: number | null
+          has_mobile_terminal?: boolean | null
+          has_stationary_terminal?: boolean | null
+          id?: string
+          mobile_monthly_rent?: number | null
+          mobile_setup_fee?: number | null
+          mobile_shipping_fee?: number | null
+          stationary_monthly_rent?: number | null
+          stationary_setup_fee?: number | null
+          stationary_shipping_fee?: number | null
+          transaction_fee?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_pricing_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           city: string | null
