@@ -176,29 +176,38 @@ export type Database = {
       customer_transaction_fees: {
         Row: {
           created_at: string | null
-          credit_card_fee_percent: number | null
           customer_id: string
-          girocard_fee_percent: number | null
+          ecommerce_credit_card_fee_percent: number | null
+          ecommerce_girocard_fee_percent: number | null
+          ecommerce_transaction_fee: number | null
           id: string
-          transaction_fee: number | null
+          pos_credit_card_fee_percent: number | null
+          pos_girocard_fee_percent: number | null
+          pos_transaction_fee: number | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          credit_card_fee_percent?: number | null
           customer_id: string
-          girocard_fee_percent?: number | null
+          ecommerce_credit_card_fee_percent?: number | null
+          ecommerce_girocard_fee_percent?: number | null
+          ecommerce_transaction_fee?: number | null
           id?: string
-          transaction_fee?: number | null
+          pos_credit_card_fee_percent?: number | null
+          pos_girocard_fee_percent?: number | null
+          pos_transaction_fee?: number | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          credit_card_fee_percent?: number | null
           customer_id?: string
-          girocard_fee_percent?: number | null
+          ecommerce_credit_card_fee_percent?: number | null
+          ecommerce_girocard_fee_percent?: number | null
+          ecommerce_transaction_fee?: number | null
           id?: string
-          transaction_fee?: number | null
+          pos_credit_card_fee_percent?: number | null
+          pos_girocard_fee_percent?: number | null
+          pos_transaction_fee?: number | null
           updated_at?: string | null
         }
         Relationships: [
