@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Plus, Trash2, Minus } from "lucide-react";
+import { ArrowLeft, Copy, Plus, Trash2, Minus, Upload, CheckCircle2, FileText } from "lucide-react";
 import { nanoid } from "nanoid";
+import { Separator } from "@/components/ui/separator";
 
 type Person = {
+  id?: string;
   first_name: string;
   last_name: string;
   date_of_birth: string;
@@ -26,6 +28,8 @@ type Person = {
   id_document_number: string;
   id_document_issue_date: string;
   id_document_issuing_authority: string;
+  document_uploaded?: boolean;
+  document_file_name?: string;
 };
 
 type BeneficialOwner = {
@@ -47,8 +51,11 @@ type Product = {
 
 const NewCustomer = () => {
   const navigate = useNavigate();
+  const { customerId } = useParams();
   const [loading, setLoading] = useState(false);
+  const [uploadingPersonIndex, setUploadingPersonIndex] = useState<number | null>(null);
   const [magicLink, setMagicLink] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState<{
     company_name: string;
     legal_form: "gmbh" | "ag" | "einzelunternehmen" | "ohg" | "kg" | "ug" | "andere" | "";
@@ -81,6 +88,149 @@ const NewCustomer = () => {
     ecommerce_girocard_fee_percent: "",
     ecommerce_credit_card_fee_percent: "",
   });
+
+  useEffect(() => {
+    if (customerId) {
+      setIsEditMode(true);
+      loadCustomerData();
+    }
+  }, [customerId]);
+
+  const loadCustomerData = async () => {
+    if (!customerId) return;
+
+    try {
+      setLoading(true);
+
+      // Load customer basic data
+      const { data: customer, error: customerError } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("id", customerId)
+        .single();
+
+      if (customerError) throw customerError;
+
+      setFormData({
+        company_name: customer.company_name || "",
+        legal_form: customer.legal_form || "",
+        country: customer.country || "DE",
+        street: customer.street || "",
+        postal_code: customer.postal_code || "",
+        city: customer.city || "",
+        tax_id: customer.tax_id || "",
+        vat_id: customer.vat_id || "",
+        commercial_register: customer.commercial_register || "",
+      });
+
+      setMagicLink(`${window.location.origin}/onboarding/${customer.magic_link_token}`);
+
+      // Load authorized persons with documents
+      const { data: authPersons } = await supabase
+        .from("authorized_persons")
+        .select("*")
+        .eq("customer_id", customerId);
+
+      if (authPersons && authPersons.length > 0) {
+        const personsWithDocs = await Promise.all(
+          authPersons.map(async (p) => {
+            const { data: docs } = await supabase
+              .from("documents")
+              .select("file_name")
+              .eq("customer_id", customerId)
+              .eq("person_id", p.id)
+              .eq("document_type", "id_document")
+              .maybeSingle();
+
+            return {
+              id: p.id,
+              first_name: p.first_name || "",
+              last_name: p.last_name || "",
+              date_of_birth: p.date_of_birth || "",
+              place_of_birth: p.place_of_birth || "",
+              nationality: p.nationality || "DE",
+              email: p.email || "",
+              private_street: p.private_street || "",
+              private_postal_code: p.private_postal_code || "",
+              private_city: p.private_city || "",
+              private_country: p.private_country || "DE",
+              id_document_number: p.id_document_number || "",
+              id_document_issue_date: p.id_document_issue_date || "",
+              id_document_issuing_authority: p.id_document_issuing_authority || "",
+              document_uploaded: !!docs,
+              document_file_name: docs?.file_name,
+            };
+          })
+        );
+        setAuthorizedPersons(personsWithDocs);
+      }
+
+      // Load beneficial owners
+      const { data: benOwners } = await supabase
+        .from("beneficial_owners")
+        .select("*")
+        .eq("customer_id", customerId);
+
+      if (benOwners && benOwners.length > 0) {
+        setBeneficialOwners(benOwners.map(p => ({
+          first_name: p.first_name || "",
+          last_name: p.last_name || "",
+          date_of_birth: p.date_of_birth || "",
+          nationality: p.nationality || "DE",
+          ownership_percentage: p.ownership_percentage?.toString() || "",
+        })));
+      }
+
+      // Load products
+      const { data: productsData } = await supabase
+        .from("customer_products")
+        .select("*")
+        .eq("customer_id", customerId);
+
+      if (productsData && productsData.length > 0) {
+        setProducts(productsData.map(p => ({
+          product_type: p.product_type,
+          quantity: p.quantity,
+          monthly_rent: p.monthly_rent?.toString() || "",
+          setup_fee: p.setup_fee?.toString() || "",
+          shipping_fee: p.shipping_fee?.toString() || "",
+          transaction_fee: p.transaction_fee?.toString() || "",
+        })));
+      }
+
+      // Load card fees
+      const { data: feesData } = await supabase
+        .from("customer_transaction_fees")
+        .select("*")
+        .eq("customer_id", customerId)
+        .maybeSingle();
+
+      if (feesData) {
+        setCardFees({
+          pos_girocard_fee_percent: feesData.pos_girocard_fee_percent?.toString() || "",
+          pos_credit_card_fee_percent: feesData.pos_credit_card_fee_percent?.toString() || "",
+          ecommerce_girocard_fee_percent: feesData.ecommerce_girocard_fee_percent?.toString() || "",
+          ecommerce_credit_card_fee_percent: feesData.ecommerce_credit_card_fee_percent?.toString() || "",
+        });
+      }
+
+      // Load document checklist
+      const { data: checklistData } = await supabase
+        .from("document_checklist")
+        .select("document_type")
+        .eq("customer_id", customerId)
+        .eq("marked_as_available", true);
+
+      if (checklistData) {
+        setAvailableDocuments(checklistData.map(d => d.document_type));
+      }
+
+    } catch (error: any) {
+      toast.error(error.message || "Fehler beim Laden der Kundendaten");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const requiresCommercialRegister = () => {
     return ["gmbh", "ag", "ug", "kg", "ohg"].includes(formData.legal_form);
@@ -164,58 +314,127 @@ const NewCustomer = () => {
         throw new Error("Rechtsform muss ausgewählt werden");
       }
 
-      const token = nanoid(32);
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
+      let currentCustomerId = customerId;
 
-      const { data: customer, error } = await supabase
-        .from("customers")
-        .insert([
-          {
-            ...formData,
+      // If edit mode, update existing customer
+      if (isEditMode && customerId) {
+        const { error: updateError } = await supabase
+          .from("customers")
+          .update({
+            company_name: formData.company_name,
             legal_form: formData.legal_form as "gmbh" | "ag" | "einzelunternehmen" | "ohg" | "kg" | "ug" | "andere",
-            created_by: user.id,
-            magic_link_token: token,
-            magic_link_expires_at: expiresAt.toISOString(),
-            status: "invited" as const,
-          },
-        ])
-        .select()
-        .single();
+            country: formData.country,
+            street: formData.street,
+            postal_code: formData.postal_code,
+            city: formData.city,
+            tax_id: formData.tax_id,
+            vat_id: formData.vat_id,
+            commercial_register: formData.commercial_register,
+          })
+          .eq("id", customerId);
 
-      if (error) throw error;
+        if (updateError) throw updateError;
+      } else {
+        // Create new customer
+        const token = nanoid(32);
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
+
+        const { data: customer, error } = await supabase
+          .from("customers")
+          .insert([
+            {
+              ...formData,
+              legal_form: formData.legal_form as "gmbh" | "ag" | "einzelunternehmen" | "ohg" | "kg" | "ug" | "andere",
+              created_by: user.id,
+              magic_link_token: token,
+              magic_link_expires_at: expiresAt.toISOString(),
+              status: "invited" as const,
+            },
+          ])
+          .select()
+          .single();
+
+        if (error) throw error;
+        currentCustomerId = customer.id;
+        setMagicLink(`${window.location.origin}/onboarding/${token}`);
+      }
+
+      // Delete and re-insert authorized persons
+      await supabase.from("authorized_persons").delete().eq("customer_id", currentCustomerId!);
 
       // Speichere optional vorerfasste Personen (auch unvollständige Daten)
       if (authorizedPersons.length > 0) {
-        const authPersonsData = authorizedPersons
-          .filter((p) => p.first_name || p.last_name || p.email) // Speichern wenn mind. ein Feld ausgefüllt
-          .map((p) => ({ 
-            customer_id: customer.id, 
-            first_name: p.first_name,
-            last_name: p.last_name,
-            date_of_birth: p.date_of_birth || null,
-            place_of_birth: p.place_of_birth || null,
-            nationality: p.nationality || "DE",
-            email: p.email || null,
-            private_street: p.private_street || null,
-            private_postal_code: p.private_postal_code || null,
-            private_city: p.private_city || null,
-            private_country: p.private_country || "DE",
-            id_document_number: p.id_document_number || null,
-            id_document_issue_date: p.id_document_issue_date || null,
-            id_document_issuing_authority: p.id_document_issuing_authority || null,
-          }));
+        const authPersonsData = await Promise.all(
+          authorizedPersons
+            .filter((p) => p.first_name || p.last_name || p.email)
+            .map(async (p) => {
+              const personData = { 
+                customer_id: currentCustomerId!, 
+                first_name: p.first_name,
+                last_name: p.last_name,
+                date_of_birth: p.date_of_birth || null,
+                place_of_birth: p.place_of_birth || null,
+                nationality: p.nationality || "DE",
+                email: p.email || null,
+                private_street: p.private_street || null,
+                private_postal_code: p.private_postal_code || null,
+                private_city: p.private_city || null,
+                private_country: p.private_country || "DE",
+                id_document_number: p.id_document_number || null,
+                id_document_issue_date: p.id_document_issue_date || null,
+                id_document_issuing_authority: p.id_document_issuing_authority || null,
+              };
 
-        if (authPersonsData.length > 0) {
-          await supabase.from("authorized_persons").insert(authPersonsData);
+              // Upload pending files if they exist
+              if ((p as any).pendingFile && !isEditMode) {
+                const file = (p as any).pendingFile;
+                const { data: savedPerson, error: personError } = await supabase
+                  .from("authorized_persons")
+                  .insert([personData])
+                  .select()
+                  .single();
+
+                if (!personError && savedPerson) {
+                  const fileExt = file.name.split(".").pop();
+                  const fileName = `${currentCustomerId}/${savedPerson.id}/id_document_${Date.now()}.${fileExt}`;
+
+                  const { error: uploadError } = await supabase.storage
+                    .from("kyc-documents")
+                    .upload(fileName, file);
+
+                  if (!uploadError) {
+                    await supabase.from("documents").insert([
+                      {
+                        customer_id: currentCustomerId!,
+                        person_id: savedPerson.id,
+                        document_type: "id_document",
+                        file_name: file.name,
+                        file_path: fileName,
+                        file_size: file.size,
+                        mime_type: file.type,
+                      },
+                    ]);
+                  }
+                }
+                return null; // Already inserted
+              }
+
+              return personData;
+            })
+        );
+
+        const filteredData = authPersonsData.filter(p => p !== null);
+        if (filteredData.length > 0) {
+          await supabase.from("authorized_persons").insert(filteredData);
         }
       }
 
       if (beneficialOwners.length > 0) {
         const beneficialOwnersData = beneficialOwners
-          .filter((p) => p.first_name || p.last_name || p.ownership_percentage) // Speichern wenn mind. ein Feld ausgefüllt
+          .filter((p) => p.first_name || p.last_name || p.ownership_percentage)
           .map((p) => ({
-            customer_id: customer.id,
+            customer_id: currentCustomerId!,
             first_name: p.first_name || "",
             last_name: p.last_name || "",
             date_of_birth: p.date_of_birth || null,
@@ -228,20 +447,24 @@ const NewCustomer = () => {
         }
       }
 
-      // Speichere Dokument-Checkliste
+      // Delete and re-insert document checklist
+      await supabase.from("document_checklist").delete().eq("customer_id", currentCustomerId!);
+      
       if (availableDocuments.length > 0) {
         const checklistData = availableDocuments.map(docType => ({
-          customer_id: customer.id,
+          customer_id: currentCustomerId!,
           document_type: docType as "commercial_register" | "transparency_register" | "articles_of_association" | "id_document" | "proof_of_address" | "other",
           marked_as_available: true,
         }));
         await supabase.from("document_checklist").insert(checklistData);
       }
 
-      // Speichere Produkte
+      // Delete and re-insert products
+      await supabase.from("customer_products").delete().eq("customer_id", currentCustomerId!);
+
       if (products.length > 0) {
         const productsData = products.map(p => ({
-          customer_id: customer.id,
+          customer_id: currentCustomerId!,
           product_type: p.product_type,
           quantity: p.quantity,
           monthly_rent: p.monthly_rent ? parseFloat(p.monthly_rent) : null,
@@ -252,11 +475,13 @@ const NewCustomer = () => {
         await supabase.from("customer_products").insert(productsData);
       }
 
-      // Speichere Kartengebühren
+      // Delete and re-insert card fees
+      await supabase.from("customer_transaction_fees").delete().eq("customer_id", currentCustomerId!);
+
       const hasAnyFees = Object.values(cardFees).some(v => v !== "");
       if (hasAnyFees) {
         const feesData = {
-          customer_id: customer.id,
+          customer_id: currentCustomerId!,
           pos_girocard_fee_percent: cardFees.pos_girocard_fee_percent ? parseFloat(cardFees.pos_girocard_fee_percent) : null,
           pos_credit_card_fee_percent: cardFees.pos_credit_card_fee_percent ? parseFloat(cardFees.pos_credit_card_fee_percent) : null,
           ecommerce_girocard_fee_percent: cardFees.ecommerce_girocard_fee_percent ? parseFloat(cardFees.ecommerce_girocard_fee_percent) : null,
@@ -265,9 +490,11 @@ const NewCustomer = () => {
         await supabase.from("customer_transaction_fees").insert([feesData]);
       }
 
-      const link = `${window.location.origin}/onboarding/${token}`;
-      setMagicLink(link);
-      toast.success("Kunde erfolgreich angelegt!");
+      if (isEditMode) {
+        toast.success("Kunde erfolgreich aktualisiert!");
+      } else {
+        toast.success("Kunde erfolgreich angelegt!");
+      }
     } catch (error: any) {
       toast.error(error.message || "Fehler beim Anlegen des Kunden");
     } finally {
@@ -292,12 +519,115 @@ const NewCustomer = () => {
         id_document_number: "",
         id_document_issue_date: "",
         id_document_issuing_authority: "",
+        document_uploaded: false,
       },
     ]);
   };
 
   const removeAuthorizedPerson = (index: number) => {
     setAuthorizedPersons(authorizedPersons.filter((_, i) => i !== index));
+  };
+
+  const handlePersonFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, personIndex: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Nur PDF, JPG oder PNG Dateien sind erlaubt");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Datei ist zu groß. Maximum 10 MB");
+      return;
+    }
+
+    setUploadingPersonIndex(personIndex);
+
+    try {
+      const person = authorizedPersons[personIndex];
+      
+      // For edit mode, we might already have a person ID
+      let personId = person.id;
+
+      // If we're in edit mode and have a customer ID, save the person first if no ID exists
+      if (isEditMode && customerId && !personId) {
+        const { data: savedPerson, error: saveError } = await supabase
+          .from("authorized_persons")
+          .insert([{
+            customer_id: customerId,
+            first_name: person.first_name || "temp",
+            last_name: person.last_name || "temp",
+            date_of_birth: person.date_of_birth || null,
+            place_of_birth: person.place_of_birth || null,
+            nationality: person.nationality || "DE",
+            email: person.email || null,
+            private_street: person.private_street || null,
+            private_postal_code: person.private_postal_code || null,
+            private_city: person.private_city || null,
+            private_country: person.private_country || "DE",
+            id_document_number: person.id_document_number || null,
+            id_document_issue_date: person.id_document_issue_date || null,
+            id_document_issuing_authority: person.id_document_issuing_authority || null,
+          }])
+          .select()
+          .single();
+
+        if (saveError) throw saveError;
+        personId = savedPerson.id;
+
+        const updated = [...authorizedPersons];
+        updated[personIndex].id = personId;
+        setAuthorizedPersons(updated);
+      } else if (!isEditMode) {
+        // In create mode, we'll store the file temporarily and upload later
+        const updated = [...authorizedPersons];
+        updated[personIndex].document_uploaded = true;
+        updated[personIndex].document_file_name = file.name;
+        // Store file in memory for later upload
+        (updated[personIndex] as any).pendingFile = file;
+        setAuthorizedPersons(updated);
+        toast.success("Dokument vorgemerkt (wird beim Speichern hochgeladen)");
+        setUploadingPersonIndex(null);
+        return;
+      }
+
+      // Upload file to storage
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${customerId}/${personId}/id_document_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("kyc-documents")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { error: dbError } = await supabase.from("documents").insert([
+        {
+          customer_id: customerId!,
+          person_id: personId,
+          document_type: "id_document",
+          file_name: file.name,
+          file_path: fileName,
+          file_size: file.size,
+          mime_type: file.type,
+        },
+      ]);
+
+      if (dbError) throw dbError;
+
+      const updated = [...authorizedPersons];
+      updated[personIndex].document_uploaded = true;
+      updated[personIndex].document_file_name = file.name;
+      setAuthorizedPersons(updated);
+
+      toast.success("Ausweisdokument hochgeladen");
+    } catch (error: any) {
+      toast.error(error.message || "Fehler beim Hochladen");
+    } finally {
+      setUploadingPersonIndex(null);
+    }
   };
 
   const addBeneficialOwner = () => {
@@ -363,9 +693,12 @@ const NewCustomer = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Neuen Kunden anlegen</CardTitle>
+            <CardTitle>{isEditMode ? "Kunde bearbeiten" : "Neuen Kunden anlegen"}</CardTitle>
             <CardDescription>
-              Erfassen Sie die Basisangaben und optional bereits bekannte Personen
+              {isEditMode 
+                ? "Bearbeiten Sie die Kundenangaben und optional bereits bekannte Personen"
+                : "Erfassen Sie die Basisangaben und optional bereits bekannte Personen"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -898,6 +1231,64 @@ const NewCustomer = () => {
                           placeholder="z.B. Stadt Berlin"
                         />
                       </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Ausweisdokument Upload */}
+                    <div className="space-y-4">
+                      <h5 className="text-xs font-medium text-muted-foreground uppercase">Ausweisdokument (optional)</h5>
+                      
+                      {person.document_uploaded ? (
+                        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg dark:bg-green-950/20 dark:border-green-900">
+                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                          <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-green-900 dark:text-green-100">Dokument hochgeladen</p>
+                            <p className="text-xs text-green-700 dark:text-green-300">{person.document_file_name}</p>
+                          </div>
+                          <Label
+                            htmlFor={`person-file-upload-${index}`}
+                            className="cursor-pointer text-sm text-primary hover:underline"
+                          >
+                            Ersetzen
+                          </Label>
+                          <Input
+                            id={`person-file-upload-${index}`}
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => handlePersonFileUpload(e, index)}
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            disabled={uploadingPersonIndex !== null}
+                          />
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                          <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                          <Label
+                            htmlFor={`person-file-upload-${index}`}
+                            className="cursor-pointer text-primary hover:underline"
+                          >
+                            {uploadingPersonIndex === index ? "Wird hochgeladen..." : "Ausweis hochladen"}
+                          </Label>
+                          <Input
+                            id={`person-file-upload-${index}`}
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => handlePersonFileUpload(e, index)}
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            disabled={uploadingPersonIndex !== null}
+                          />
+                          <p className="text-xs text-muted-foreground mt-2">
+                            PDF, JPG oder PNG (max. 10 MB)
+                          </p>
+                          {!isEditMode && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                              Wird beim Speichern hochgeladen
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Copy, ExternalLink } from "lucide-react";
+import { LogOut, Plus, Copy, ExternalLink, Edit } from "lucide-react";
 import { toast } from "sonner";
 
 type Customer = {
@@ -124,28 +124,38 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {customer.magic_link_token && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyMagicLink(customer.magic_link_token!)}
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Link kopieren
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          window.open(`/onboarding/${customer.magic_link_token}`, "_blank")
-                        }
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Link öffnen
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/dashboard/edit-customer/${customer.id}`)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Bearbeiten
+                    </Button>
+                    {customer.magic_link_token && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyMagicLink(customer.magic_link_token!)}
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Link kopieren
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            window.open(`/onboarding/${customer.magic_link_token}`, "_blank")
+                          }
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Link öffnen
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
