@@ -16,11 +16,23 @@ type Person = {
   first_name: string;
   last_name: string;
   date_of_birth: string;
+  place_of_birth: string;
   nationality: string;
   email: string;
+  private_street: string;
+  private_postal_code: string;
+  private_city: string;
+  private_country: string;
+  id_document_number: string;
+  id_document_issue_date: string;
+  id_document_issuing_authority: string;
 };
 
-type BeneficialOwner = Person & {
+type BeneficialOwner = {
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  nationality: string;
   ownership_percentage: string;
 };
 
@@ -177,7 +189,22 @@ const NewCustomer = () => {
       if (authorizedPersons.length > 0) {
         const authPersonsData = authorizedPersons
           .filter((p) => p.first_name || p.last_name || p.email) // Speichern wenn mind. ein Feld ausgefüllt
-          .map((p) => ({ customer_id: customer.id, ...p }));
+          .map((p) => ({ 
+            customer_id: customer.id, 
+            first_name: p.first_name,
+            last_name: p.last_name,
+            date_of_birth: p.date_of_birth || null,
+            place_of_birth: p.place_of_birth || null,
+            nationality: p.nationality || "DE",
+            email: p.email || null,
+            private_street: p.private_street || null,
+            private_postal_code: p.private_postal_code || null,
+            private_city: p.private_city || null,
+            private_country: p.private_country || "DE",
+            id_document_number: p.id_document_number || null,
+            id_document_issue_date: p.id_document_issue_date || null,
+            id_document_issuing_authority: p.id_document_issuing_authority || null,
+          }));
 
         if (authPersonsData.length > 0) {
           await supabase.from("authorized_persons").insert(authPersonsData);
@@ -251,7 +278,21 @@ const NewCustomer = () => {
   const addAuthorizedPerson = () => {
     setAuthorizedPersons([
       ...authorizedPersons,
-      { first_name: "", last_name: "", date_of_birth: "", nationality: "DE", email: "" },
+      { 
+        first_name: "", 
+        last_name: "", 
+        date_of_birth: "", 
+        place_of_birth: "",
+        nationality: "DE", 
+        email: "",
+        private_street: "",
+        private_postal_code: "",
+        private_city: "",
+        private_country: "DE",
+        id_document_number: "",
+        id_document_issue_date: "",
+        id_document_issuing_authority: "",
+      },
     ]);
   };
 
@@ -267,7 +308,6 @@ const NewCustomer = () => {
         last_name: "",
         date_of_birth: "",
         nationality: "DE",
-        email: "",
         ownership_percentage: "",
       },
     ]);
@@ -657,11 +697,11 @@ const NewCustomer = () => {
 
               <TabsContent value="authorized" className="space-y-4 mt-6">
                 <p className="text-sm text-muted-foreground mb-4">
-                  Optional: Erfassen Sie bereits bekannte vertretungsberechtigte Personen
+                  Optional: Erfassen Sie bereits bekannte vertretungsberechtigte Personen (GWG-Pflichtangaben)
                 </p>
                 {authorizedPersons.map((person, index) => (
-                  <div key={index} className="p-4 border rounded-lg space-y-4">
-                    <div className="flex items-center justify-between mb-2">
+                  <div key={index} className="p-4 border rounded-lg space-y-6 bg-muted/20">
+                    <div className="flex items-center justify-between">
                       <h4 className="font-medium">Person {index + 1}</h4>
                       <Button
                         type="button"
@@ -673,54 +713,189 @@ const NewCustomer = () => {
                       </Button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Vorname</Label>
-                        <Input
-                          value={person.first_name}
-                          onChange={(e) => {
-                            const updated = [...authorizedPersons];
-                            updated[index].first_name = e.target.value;
-                            setAuthorizedPersons(updated);
-                          }}
-                        />
+                    {/* Persönliche Daten */}
+                    <div className="space-y-4">
+                      <h5 className="text-xs font-medium text-muted-foreground uppercase">Persönliche Daten</h5>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Vorname</Label>
+                          <Input
+                            value={person.first_name}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].first_name = e.target.value;
+                              setAuthorizedPersons(updated);
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Nachname</Label>
+                          <Input
+                            value={person.last_name}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].last_name = e.target.value;
+                              setAuthorizedPersons(updated);
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Nachname</Label>
-                        <Input
-                          value={person.last_name}
-                          onChange={(e) => {
-                            const updated = [...authorizedPersons];
-                            updated[index].last_name = e.target.value;
-                            setAuthorizedPersons(updated);
-                          }}
-                        />
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Geburtsdatum</Label>
+                          <Input
+                            type="date"
+                            value={person.date_of_birth}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].date_of_birth = e.target.value;
+                              setAuthorizedPersons(updated);
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Geburtsort</Label>
+                          <Input
+                            value={person.place_of_birth}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].place_of_birth = e.target.value;
+                              setAuthorizedPersons(updated);
+                            }}
+                            placeholder="z.B. Berlin"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Staatsangehörigkeit</Label>
+                          <Input
+                            value={person.nationality}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].nationality = e.target.value.toUpperCase();
+                              setAuthorizedPersons(updated);
+                            }}
+                            placeholder="DE"
+                            maxLength={2}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>E-Mail (optional)</Label>
+                          <Input
+                            type="email"
+                            value={person.email}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].email = e.target.value;
+                              setAuthorizedPersons(updated);
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Privatadresse */}
+                    <div className="space-y-4">
+                      <h5 className="text-xs font-medium text-muted-foreground uppercase">Privatadresse</h5>
+                      
                       <div className="space-y-2">
-                        <Label>Geburtsdatum</Label>
+                        <Label>Straße & Hausnummer</Label>
                         <Input
-                          type="date"
-                          value={person.date_of_birth}
+                          value={person.private_street}
                           onChange={(e) => {
                             const updated = [...authorizedPersons];
-                            updated[index].date_of_birth = e.target.value;
+                            updated[index].private_street = e.target.value;
                             setAuthorizedPersons(updated);
                           }}
+                          placeholder="z.B. Musterstraße 123"
                         />
                       </div>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>PLZ</Label>
+                          <Input
+                            value={person.private_postal_code}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].private_postal_code = e.target.value;
+                              setAuthorizedPersons(updated);
+                            }}
+                            placeholder="12345"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Stadt</Label>
+                          <Input
+                            value={person.private_city}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].private_city = e.target.value;
+                              setAuthorizedPersons(updated);
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Land</Label>
+                          <Input
+                            value={person.private_country}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].private_country = e.target.value.toUpperCase();
+                              setAuthorizedPersons(updated);
+                            }}
+                            placeholder="DE"
+                            maxLength={2}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ausweisdaten */}
+                    <div className="space-y-4">
+                      <h5 className="text-xs font-medium text-muted-foreground uppercase">Ausweisdaten</h5>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Ausweisnummer</Label>
+                          <Input
+                            value={person.id_document_number}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].id_document_number = e.target.value;
+                              setAuthorizedPersons(updated);
+                            }}
+                            placeholder="z.B. T12345678"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Ausstellungsdatum</Label>
+                          <Input
+                            type="date"
+                            value={person.id_document_issue_date}
+                            onChange={(e) => {
+                              const updated = [...authorizedPersons];
+                              updated[index].id_document_issue_date = e.target.value;
+                              setAuthorizedPersons(updated);
+                            }}
+                          />
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
-                        <Label>E-Mail</Label>
+                        <Label>Ausstellende Behörde</Label>
                         <Input
-                          type="email"
-                          value={person.email}
+                          value={person.id_document_issuing_authority}
                           onChange={(e) => {
                             const updated = [...authorizedPersons];
-                            updated[index].email = e.target.value;
+                            updated[index].id_document_issuing_authority = e.target.value;
                             setAuthorizedPersons(updated);
                           }}
+                          placeholder="z.B. Stadt Berlin"
                         />
                       </div>
                     </div>
