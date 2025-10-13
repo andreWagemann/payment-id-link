@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
+import { sepaMandateSchema } from "@/lib/validationSchemas";
 
 type SEPAMandateStepProps = {
   customerId: string;
@@ -53,8 +54,8 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
         });
         setMandateReference(data.mandate_reference);
       }
-    } catch (error) {
-      console.error("Fehler beim Laden des Mandats:", error);
+    } catch (error: any) {
+      // Silent fail - user can still enter data
     }
   };
 
@@ -80,18 +81,20 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
   };
 
   const handleSubmit = async () => {
-    if (!formData.iban || !formData.account_holder) {
-      toast.error("Bitte füllen Sie alle Pflichtfelder aus");
-      return;
-    }
+    // Prepare data for validation
+    const dataToValidate = {
+      iban: formData.iban.replace(/\s/g, ""), // Remove spaces for validation
+      bic: formData.bic,
+      bank_name: formData.bank_name,
+      account_holder: formData.account_holder,
+      accepted: formData.accepted,
+    };
 
-    if (!validateIBAN(formData.iban)) {
-      toast.error("Bitte geben Sie eine gültige IBAN ein");
-      return;
-    }
-
-    if (!formData.accepted) {
-      toast.error("Bitte akzeptieren Sie das SEPA-Lastschriftmandat");
+    // Validate input
+    const validationResult = sepaMandateSchema.safeParse(dataToValidate);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
@@ -100,12 +103,12 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
     try {
       const mandateData = {
         customer_id: customerId,
-        iban: formData.iban.replace(/\s/g, ""),
-        bic: formData.bic || null,
-        bank_name: formData.bank_name || null,
-        account_holder: formData.account_holder,
+        iban: validationResult.data.iban,
+        bic: validationResult.data.bic || null,
+        bank_name: validationResult.data.bank_name,
+        account_holder: validationResult.data.account_holder,
         mandate_reference: mandateReference,
-        accepted: formData.accepted,
+        accepted: true,
         accepted_at: new Date().toISOString(),
       };
 
@@ -118,8 +121,7 @@ const SEPAMandateStep = ({ customerId, companyName, onComplete, onBack }: SEPAMa
       toast.success("SEPA-Mandat gespeichert");
       onComplete();
     } catch (error: any) {
-      toast.error("Fehler beim Speichern");
-      console.error(error);
+      toast.error(error.message || "Fehler beim Speichern");
     } finally {
       setLoading(false);
     }

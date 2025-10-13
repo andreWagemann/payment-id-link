@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { companySchema } from "@/lib/validationSchemas";
+import { z } from "zod";
 
 type CompanyStepProps = {
   customer: any;
@@ -32,10 +34,19 @@ const CompanyStep = ({ customer, onComplete, onBack }: CompanyStepProps) => {
     setLoading(true);
 
     try {
+      // Validate input
+      const validationResult = companySchema.safeParse(formData);
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast.error(firstError.message);
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("customers")
         .update({
-          ...formData,
+          ...validationResult.data,
           status: "in_progress",
         })
         .eq("id", customer.id);
@@ -45,7 +56,7 @@ const CompanyStep = ({ customer, onComplete, onBack }: CompanyStepProps) => {
       toast.success("Unternehmensdaten gespeichert");
       onComplete();
     } catch (error: any) {
-      toast.error("Fehler beim Speichern");
+      toast.error(error.message || "Fehler beim Speichern");
     } finally {
       setLoading(false);
     }

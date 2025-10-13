@@ -42,8 +42,8 @@ const SignatureStep = ({ customerId, onComplete, onBack }: SignatureStepProps) =
 
       setProducts(productsData || []);
       setCardFees(feesData);
-    } catch (error) {
-      console.error("Fehler beim Laden der Preise:", error);
+    } catch (error: any) {
+      // Silent fail - pricing section won't show if there's an error
     }
   };
 
@@ -125,7 +125,7 @@ const SignatureStep = ({ customerId, onComplete, onBack }: SignatureStepProps) =
       toast.success("Onboarding erfolgreich abgeschlossen!");
       onComplete();
     } catch (error: any) {
-      toast.error("Fehler beim Abschließen");
+      toast.error(error.message || "Fehler beim Abschließen");
     } finally {
       setLoading(false);
     }

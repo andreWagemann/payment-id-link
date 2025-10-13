@@ -103,8 +103,8 @@ const PersonsStep = ({ customerId, onComplete }: PersonsStepProps) => {
       }
 
       setInitialLoadDone(true);
-    } catch (error) {
-      console.error("Fehler beim Laden der Personen:", error);
+    } catch (error: any) {
+      // Silent fail - user can still enter data
       setInitialLoadDone(true);
     }
   };
@@ -172,7 +172,7 @@ const PersonsStep = ({ customerId, onComplete }: PersonsStepProps) => {
       toast.success("Personen gespeichert");
       onComplete();
     } catch (error: any) {
-      toast.error("Fehler beim Speichern");
+      toast.error(error.message || "Fehler beim Speichern");
     } finally {
       setLoading(false);
     }

@@ -65,8 +65,8 @@ const BeneficialOwnersStep = ({ customerId, onComplete, onBack }: BeneficialOwne
           }))
         );
       }
-    } catch (error) {
-      console.error("Fehler beim Laden:", error);
+    } catch (error: any) {
+      // Silent fail - user can still enter data
     }
   };
 
@@ -104,7 +104,7 @@ const BeneficialOwnersStep = ({ customerId, onComplete, onBack }: BeneficialOwne
       toast.success("Wirtschaftlich Berechtigte gespeichert");
       onComplete();
     } catch (error: any) {
-      toast.error("Fehler beim Speichern");
+      toast.error(error.message || "Fehler beim Speichern");
     } finally {
       setLoading(false);
     }

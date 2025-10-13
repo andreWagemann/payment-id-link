@@ -101,8 +101,8 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
       });
 
       setChecklist(checklistMap);
-    } catch (error) {
-      console.error("Fehler beim Laden der Checkliste:", error);
+    } catch (error: any) {
+      // Silent fail - checklist will be empty
     }
   };
 
@@ -148,7 +148,7 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
       
       toast.success("Dokument hochgeladen");
     } catch (error: any) {
-      toast.error("Fehler beim Hochladen");
+      toast.error(error.message || "Fehler beim Hochladen");
     } finally {
       setLoading(false);
     }

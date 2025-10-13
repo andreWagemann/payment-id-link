@@ -65,8 +65,8 @@ const AuthorizedPersonsStep = ({ customerId, onComplete, onBack }: AuthorizedPer
           }))
         );
       }
-    } catch (error) {
-      console.error("Fehler beim Laden:", error);
+    } catch (error: any) {
+      // Silent fail - user can still enter data
     }
   };
 
@@ -103,7 +103,7 @@ const AuthorizedPersonsStep = ({ customerId, onComplete, onBack }: AuthorizedPer
       toast.success("Vertretungsberechtigte gespeichert");
       onComplete();
     } catch (error: any) {
-      toast.error("Fehler beim Speichern");
+      toast.error(error.message || "Fehler beim Speichern");
     } finally {
       setLoading(false);
     }
