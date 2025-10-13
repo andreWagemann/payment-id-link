@@ -56,6 +56,7 @@ const NewCustomer = () => {
   const [uploadingPersonIndex, setUploadingPersonIndex] = useState<number | null>(null);
   const [magicLink, setMagicLink] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [showMagicLink, setShowMagicLink] = useState(false);
   const [formData, setFormData] = useState<{
     company_name: string;
     legal_form: "gmbh" | "ag" | "einzelunternehmen" | "ohg" | "kg" | "ug" | "andere" | "";
@@ -358,6 +359,7 @@ const NewCustomer = () => {
         if (error) throw error;
         currentCustomerId = customer.id;
         setMagicLink(`${window.location.origin}/onboarding/${token}`);
+        setShowMagicLink(true);
       }
 
       // Delete and re-insert authorized persons
@@ -648,7 +650,7 @@ const NewCustomer = () => {
     setBeneficialOwners(beneficialOwners.filter((_, i) => i !== index));
   };
 
-  if (magicLink) {
+  if (showMagicLink && magicLink) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="container mx-auto max-w-2xl py-8">
