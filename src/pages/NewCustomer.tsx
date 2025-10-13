@@ -492,6 +492,7 @@ const NewCustomer = () => {
 
       if (isEditMode) {
         toast.success("Kunde erfolgreich aktualisiert!");
+        navigate("/dashboard");
       } else {
         toast.success("Kunde erfolgreich angelegt!");
       }
