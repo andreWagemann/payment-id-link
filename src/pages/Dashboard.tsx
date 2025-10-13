@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Copy, ExternalLink, Edit } from "lucide-react";
+import { LogOut, Plus, Copy, ExternalLink, Edit, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 type Customer = {
@@ -125,6 +125,16 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
+                    {customer.status === "completed" && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => navigate(`/dashboard/customer/${customer.id}`)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Details ansehen
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"

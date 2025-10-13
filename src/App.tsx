@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NewCustomer from "./pages/NewCustomer";
+import CustomerDetail from "./pages/CustomerDetail";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/new-customer" element={<NewCustomer />} />
           <Route path="/dashboard/edit-customer/:customerId" element={<NewCustomer />} />
+          <Route path="/dashboard/customer/:customerId" element={<CustomerDetail />} />
           <Route path="/onboarding/:token" element={<Onboarding />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
