@@ -24,10 +24,18 @@ export type Database = {
           email: string | null
           first_name: string
           id: string
+          id_document_issue_date: string | null
+          id_document_issuing_authority: string | null
+          id_document_number: string | null
           last_name: string
           nationality: string | null
           phone: string | null
+          place_of_birth: string | null
           postal_code: string | null
+          private_city: string | null
+          private_country: string | null
+          private_postal_code: string | null
+          private_street: string | null
           street: string | null
           updated_at: string
         }
@@ -40,10 +48,18 @@ export type Database = {
           email?: string | null
           first_name: string
           id?: string
+          id_document_issue_date?: string | null
+          id_document_issuing_authority?: string | null
+          id_document_number?: string | null
           last_name: string
           nationality?: string | null
           phone?: string | null
+          place_of_birth?: string | null
           postal_code?: string | null
+          private_city?: string | null
+          private_country?: string | null
+          private_postal_code?: string | null
+          private_street?: string | null
           street?: string | null
           updated_at?: string
         }
@@ -56,10 +72,18 @@ export type Database = {
           email?: string | null
           first_name?: string
           id?: string
+          id_document_issue_date?: string | null
+          id_document_issuing_authority?: string | null
+          id_document_number?: string | null
           last_name?: string
           nationality?: string | null
           phone?: string | null
+          place_of_birth?: string | null
           postal_code?: string | null
+          private_city?: string | null
+          private_country?: string | null
+          private_postal_code?: string | null
+          private_street?: string | null
           street?: string | null
           updated_at?: string
         }

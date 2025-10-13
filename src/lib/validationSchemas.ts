@@ -35,6 +35,23 @@ export const personSchema = z.object({
   country: z.string().optional(),
 });
 
+// Authorized person validation schema (with GWG fields)
+export const authorizedPersonSchema = z.object({
+  first_name: z.string().trim().min(1, "Vorname ist erforderlich").max(100, "Vorname darf max. 100 Zeichen haben"),
+  last_name: z.string().trim().min(1, "Nachname ist erforderlich").max(100, "Nachname darf max. 100 Zeichen haben"),
+  date_of_birth: z.string().min(1, "Geburtsdatum ist erforderlich"),
+  place_of_birth: z.string().trim().min(1, "Geburtsort ist erforderlich").max(100, "Geburtsort darf max. 100 Zeichen haben"),
+  nationality: z.string().length(2, "Ländercode muss 2 Zeichen haben"),
+  email: z.string().email("Ungültige E-Mail-Adresse").max(255, "E-Mail darf max. 255 Zeichen haben").optional().or(z.literal("")),
+  private_street: z.string().trim().min(1, "Privatadresse (Straße) ist erforderlich").max(200, "Straße darf max. 200 Zeichen haben"),
+  private_postal_code: z.string().trim().min(1, "Postleitzahl ist erforderlich").max(10, "Postleitzahl darf max. 10 Zeichen haben"),
+  private_city: z.string().trim().min(1, "Stadt ist erforderlich").max(100, "Stadt darf max. 100 Zeichen haben"),
+  private_country: z.string().length(2, "Ländercode muss 2 Zeichen haben").default("DE"),
+  id_document_number: z.string().trim().min(1, "Ausweisnummer ist erforderlich").max(50, "Ausweisnummer darf max. 50 Zeichen haben"),
+  id_document_issue_date: z.string().min(1, "Ausstellungsdatum ist erforderlich"),
+  id_document_issuing_authority: z.string().trim().min(1, "Ausstellende Behörde ist erforderlich").max(200, "Behörde darf max. 200 Zeichen haben"),
+});
+
 // Beneficial owner validation schema
 export const beneficialOwnerSchema = personSchema.extend({
   ownership_percentage: z.string()
