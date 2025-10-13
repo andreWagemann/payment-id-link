@@ -157,7 +157,7 @@ const SignatureStep = ({ customerId, onComplete, onBack }: SignatureStepProps) =
                       {product.quantity > 1 && ` (${product.quantity}x)`}
                     </h4>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm pl-4">
+                  <div className="space-y-1 text-sm pl-4">
                     {product.monthly_rent && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Monatsmiete:</span>
@@ -192,10 +192,10 @@ const SignatureStep = ({ customerId, onComplete, onBack }: SignatureStepProps) =
                   <Separator />
                   <div className="space-y-2">
                     <h4 className="font-medium">Kartengebühren</h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm pl-4">
+                    <div className="space-y-1 text-sm pl-4">
                       {(cardFees.pos_girocard_fee_percent || cardFees.pos_credit_card_fee_percent) && (
                         <>
-                          <div className="col-span-2 text-xs font-medium text-muted-foreground mt-2">POS-Terminals:</div>
+                          <div className="text-xs font-medium text-muted-foreground mt-2">POS-Terminals:</div>
                           {cardFees.pos_girocard_fee_percent && (
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Girocard:</span>
@@ -212,7 +212,7 @@ const SignatureStep = ({ customerId, onComplete, onBack }: SignatureStepProps) =
                       )}
                       {(cardFees.ecommerce_girocard_fee_percent || cardFees.ecommerce_credit_card_fee_percent) && (
                         <>
-                          <div className="col-span-2 text-xs font-medium text-muted-foreground mt-2">eCommerce:</div>
+                          <div className="text-xs font-medium text-muted-foreground mt-2">eCommerce:</div>
                           {cardFees.ecommerce_girocard_fee_percent && (
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Girocard:</span>
