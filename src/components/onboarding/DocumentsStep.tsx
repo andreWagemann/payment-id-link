@@ -69,22 +69,10 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
         };
       });
 
-      // Personenbezogene Dokumente (Ausweise und Adressnachweise)
+      // Personenbezogene Dokumente (nur Adressnachweise für Personen außerhalb Deutschlands)
       authPersons?.forEach(person => {
         const personName = `${person.first_name} ${person.last_name}`.trim();
-        const personKey = `id_document_${person.id}`;
         
-        // Ausweis für jede Person
-        const idUploaded = docs?.some(d => d.document_type === 'id_document' && d.person_id === person.id) || false;
-        const idMarked = checklistItems?.find(c => c.document_type === 'id_document' && c.person_id === person.id)?.marked_as_available || false;
-        
-        checklistMap[personKey] = {
-          required: true,
-          uploaded: idUploaded,
-          markedAvailable: idMarked,
-          personName: `Ausweis - ${personName}`,
-        };
-
         // Adressnachweis nur wenn Person außerhalb Deutschlands
         if (person.country && person.country !== 'DE') {
           const addressKey = `proof_of_address_${person.id}`;
@@ -128,7 +116,7 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
       const { error: dbError } = await supabase.from("documents").insert([
         {
           customer_id: customerId,
-          document_type: selectedType as "commercial_register" | "transparency_register" | "articles_of_association" | "id_document" | "proof_of_address" | "other",
+          document_type: selectedType as "commercial_register" | "transparency_register" | "articles_of_association" | "proof_of_address" | "other",
           file_name: file.name,
           file_path: fileName,
           file_size: file.size,
@@ -232,46 +220,48 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
         </div>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Dokumenttyp</Label>
+            <Select value={selectedType} onValueChange={(value) => {
+              setSelectedType(value);
+              setSelectedPersonId(null);
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Typ auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                {documentTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+                {/* Adressnachweis nur für Personen außerhalb Deutschlands */}
+                {authorizedPersons.some(p => p.country && p.country !== 'DE') && (
+                  <SelectItem value="proof_of_address">Adressnachweis</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {selectedType === 'proof_of_address' && (
             <div className="space-y-2">
-              <Label>Dokumenttyp</Label>
-              <Select value={selectedType} onValueChange={(value) => {
-                setSelectedType(value);
-                setSelectedPersonId(null);
-              }}>
+              <Label>Person (außerhalb Deutschland)</Label>
+              <Select value={selectedPersonId || ""} onValueChange={setSelectedPersonId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Typ auswählen" />
+                  <SelectValue placeholder="Person auswählen" />
                 </SelectTrigger>
                 <SelectContent>
-                  {documentTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="id_document">Ausweisdokument</SelectItem>
-                  <SelectItem value="proof_of_address">Adressnachweis</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {(selectedType === 'id_document' || selectedType === 'proof_of_address') && (
-              <div className="space-y-2">
-                <Label>Person</Label>
-                <Select value={selectedPersonId || ""} onValueChange={setSelectedPersonId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Person auswählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {authorizedPersons.map((person) => (
+                  {authorizedPersons
+                    .filter(person => person.country && person.country !== 'DE')
+                    .map((person) => (
                       <SelectItem key={person.id} value={person.id}>
                         {person.first_name} {person.last_name}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
 
           <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
@@ -288,12 +278,12 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
               className="hidden"
               onChange={handleFileUpload}
               accept=".pdf,.jpg,.jpeg,.png"
-              disabled={!selectedType || loading || ((selectedType === 'id_document' || selectedType === 'proof_of_address') && !selectedPersonId)}
+              disabled={!selectedType || loading || (selectedType === 'proof_of_address' && !selectedPersonId)}
             />
             <p className="text-sm text-muted-foreground mt-2">
               PDF, JPG oder PNG (max. 10 MB)
             </p>
-            {(selectedType === 'id_document' || selectedType === 'proof_of_address') && !selectedPersonId && (
+            {selectedType === 'proof_of_address' && !selectedPersonId && (
               <p className="text-sm text-amber-600 mt-2">
                 Bitte wählen Sie zuerst eine Person aus
               </p>
