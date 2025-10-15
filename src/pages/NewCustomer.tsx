@@ -364,29 +364,35 @@ const NewCustomer = () => {
 
       // Save authorized persons
       if (authorizedPersons.length > 0) {
-        const authPersonsData = authorizedPersons
+        const personsWithChecklist: Array<{
+          personData: any;
+          hasIdDocument: boolean;
+        }> = authorizedPersons
           .filter((p) => p.first_name || p.last_name || p.email)
-          .map((p) => ({ 
-            customer_id: currentCustomerId!, 
-            first_name: p.first_name,
-            last_name: p.last_name,
-            date_of_birth: p.date_of_birth || null,
-            place_of_birth: p.place_of_birth || null,
-            nationality: p.nationality || "DE",
-            email: p.email || null,
-            private_street: p.private_street || null,
-            private_postal_code: p.private_postal_code || null,
-            private_city: p.private_city || null,
-            private_country: p.private_country || "DE",
-            id_document_number: p.id_document_number || null,
-            id_document_issue_date: p.id_document_issue_date || null,
-            id_document_issuing_authority: p.id_document_issuing_authority || null,
+          .map((p) => ({
+            personData: {
+              customer_id: currentCustomerId!, 
+              first_name: p.first_name,
+              last_name: p.last_name,
+              date_of_birth: p.date_of_birth || null,
+              place_of_birth: p.place_of_birth || null,
+              nationality: p.nationality || "DE",
+              email: p.email || null,
+              private_street: p.private_street || null,
+              private_postal_code: p.private_postal_code || null,
+              private_city: p.private_city || null,
+              private_country: p.private_country || "DE",
+              id_document_number: p.id_document_number || null,
+              id_document_issue_date: p.id_document_issue_date || null,
+              id_document_issuing_authority: p.id_document_issuing_authority || null,
+            },
+            hasIdDocument: p.id_document_available || false,
           }));
 
-        if (authPersonsData.length > 0) {
+        if (personsWithChecklist.length > 0) {
           const { data: savedPersons, error: personsError } = await supabase
             .from("authorized_persons")
-            .insert(authPersonsData)
+            .insert(personsWithChecklist.map(p => p.personData))
             .select();
 
           if (personsError) throw personsError;
@@ -395,8 +401,7 @@ const NewCustomer = () => {
           if (savedPersons) {
             const idDocChecklistItems = savedPersons
               .map((savedPerson, index) => {
-                const originalPerson = authorizedPersons[index];
-                if (originalPerson.id_document_available) {
+                if (personsWithChecklist[index].hasIdDocument) {
                   return {
                     customer_id: currentCustomerId!,
                     person_id: savedPerson.id,
