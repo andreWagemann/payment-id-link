@@ -73,11 +73,12 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
       authPersons?.forEach(person => {
         const personName = `${person.first_name} ${person.last_name}`.trim();
         
-        // ID-Dokument prüfen - wenn bereits hochgeladen, nicht mehr anfordern
+        // ID-Dokument prüfen - wenn bereits hochgeladen ODER als verfügbar markiert, nicht mehr anfordern
         const hasIdDocument = docs?.some(d => d.document_type === 'id_document' && d.person_id === person.id) || false;
+        const idMarkedAvailable = checklistItems?.find(c => c.document_type === 'id_document' && c.person_id === person.id)?.marked_as_available || false;
         
-        // Nur wenn noch kein ID-Dokument hochgeladen wurde, in Checklist aufnehmen
-        if (!hasIdDocument) {
+        // Nur wenn noch kein ID-Dokument hochgeladen UND nicht als verfügbar markiert, in Checklist aufnehmen
+        if (!hasIdDocument && !idMarkedAvailable) {
           const idKey = `id_document_${person.id}`;
           checklistMap[idKey] = {
             required: true,
