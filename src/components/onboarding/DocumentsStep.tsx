@@ -69,9 +69,23 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
         };
       });
 
-      // Personenbezogene Dokumente (nur Adressnachweise für Personen außerhalb Deutschlands)
+      // Personenbezogene Dokumente
       authPersons?.forEach(person => {
         const personName = `${person.first_name} ${person.last_name}`.trim();
+        
+        // ID-Dokument prüfen - wenn bereits hochgeladen, nicht mehr anfordern
+        const hasIdDocument = docs?.some(d => d.document_type === 'id_document' && d.person_id === person.id) || false;
+        
+        // Nur wenn noch kein ID-Dokument hochgeladen wurde, in Checklist aufnehmen
+        if (!hasIdDocument) {
+          const idKey = `id_document_${person.id}`;
+          checklistMap[idKey] = {
+            required: true,
+            uploaded: false,
+            markedAvailable: false,
+            personName: `Ausweisdokument - ${personName}`,
+          };
+        }
         
         // Adressnachweis nur wenn Person außerhalb Deutschlands
         if (person.country && person.country !== 'DE') {
@@ -104,8 +118,23 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
     setLoading(true);
 
     try {
+      // Bestimme den tatsächlichen Dokumenttyp
+      let actualDocType = selectedType;
+      let actualPersonId = selectedPersonId;
+      
+      // Wenn selectedType ein Key wie "id_document_UUID" ist, extrahiere die Info
+      if (selectedType.startsWith('id_document_')) {
+        actualDocType = 'id_document';
+        actualPersonId = selectedType.replace('id_document_', '');
+      } else if (selectedType.startsWith('proof_of_address_')) {
+        actualDocType = 'proof_of_address';
+        actualPersonId = selectedType.replace('proof_of_address_', '');
+      }
+
       const fileExt = file.name.split(".").pop();
-      const fileName = `${customerId}/${Date.now()}_${selectedType}.${fileExt}`;
+      const fileName = actualPersonId 
+        ? `${customerId}/${actualPersonId}/${actualDocType}_${Date.now()}.${fileExt}`
+        : `${customerId}/${Date.now()}_${actualDocType}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("kyc-documents")
@@ -116,12 +145,12 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
       const { error: dbError } = await supabase.from("documents").insert([
         {
           customer_id: customerId,
-          document_type: selectedType as "commercial_register" | "transparency_register" | "articles_of_association" | "proof_of_address" | "other",
+          document_type: actualDocType as "commercial_register" | "transparency_register" | "articles_of_association" | "id_document" | "proof_of_address" | "other",
           file_name: file.name,
           file_path: fileName,
           file_size: file.size,
           mime_type: file.type,
-          person_id: selectedPersonId,
+          person_id: actualPersonId,
         },
       ]);
 
@@ -143,10 +172,16 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
   };
 
   const handleComplete = () => {
-    if (uploadedDocs.length === 0) {
-      toast.error("Bitte laden Sie mindestens ein Dokument hoch");
+    // Prüfe ob noch erforderliche Dokumente fehlen
+    const missingDocs = Object.entries(checklist).filter(
+      ([_, status]) => status.required && !status.uploaded && !status.markedAvailable
+    );
+    
+    if (missingDocs.length > 0) {
+      toast.error("Bitte laden Sie alle erforderlichen Dokumente hoch");
       return;
     }
+    
     onComplete();
   };
 
@@ -224,44 +259,45 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
             <Label>Dokumenttyp</Label>
             <Select value={selectedType} onValueChange={(value) => {
               setSelectedType(value);
-              setSelectedPersonId(null);
+              // Wenn ID-Dokument ausgewählt, prüfe ob es für eine Person ist
+              if (value.startsWith('id_document_')) {
+                const personId = value.replace('id_document_', '');
+                setSelectedPersonId(personId);
+              } else if (value.startsWith('proof_of_address_')) {
+                const personId = value.replace('proof_of_address_', '');
+                setSelectedPersonId(personId);
+              } else {
+                setSelectedPersonId(null);
+              }
             }}>
               <SelectTrigger>
                 <SelectValue placeholder="Typ auswählen" />
               </SelectTrigger>
               <SelectContent>
-                {documentTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-                {/* Adressnachweis nur für Personen außerhalb Deutschlands */}
-                {authorizedPersons.some(p => p.country && p.country !== 'DE') && (
-                  <SelectItem value="proof_of_address">Adressnachweis</SelectItem>
-                )}
+                {/* Unternehmensdokumente */}
+                {documentTypes
+                  .filter(type => !checklist[type.value]?.uploaded && !checklist[type.value]?.markedAvailable)
+                  .map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                
+                {/* Personenbezogene Dokumente aus der Checkliste */}
+                {Object.entries(checklist)
+                  .filter(([key, status]) => 
+                    (key.startsWith('id_document_') || key.startsWith('proof_of_address_')) && 
+                    !status.uploaded && 
+                    !status.markedAvailable
+                  )
+                  .map(([key, status]) => (
+                    <SelectItem key={key} value={key}>
+                      {status.personName}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
-
-          {selectedType === 'proof_of_address' && (
-            <div className="space-y-2">
-              <Label>Person (außerhalb Deutschland)</Label>
-              <Select value={selectedPersonId || ""} onValueChange={setSelectedPersonId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Person auswählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {authorizedPersons
-                    .filter(person => person.country && person.country !== 'DE')
-                    .map((person) => (
-                      <SelectItem key={person.id} value={person.id}>
-                        {person.first_name} {person.last_name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
 
           <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
@@ -278,16 +314,11 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
               className="hidden"
               onChange={handleFileUpload}
               accept=".pdf,.jpg,.jpeg,.png"
-              disabled={!selectedType || loading || (selectedType === 'proof_of_address' && !selectedPersonId)}
+              disabled={!selectedType || loading}
             />
             <p className="text-sm text-muted-foreground mt-2">
               PDF, JPG oder PNG (max. 10 MB)
             </p>
-            {selectedType === 'proof_of_address' && !selectedPersonId && (
-              <p className="text-sm text-amber-600 mt-2">
-                Bitte wählen Sie zuerst eine Person aus
-              </p>
-            )}
           </div>
         </div>
 
@@ -323,7 +354,7 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
           <Button
             onClick={handleComplete}
             className="flex-1"
-            disabled={loading || uploadedDocs.length === 0}
+            disabled={loading}
           >
             Weiter
           </Button>
