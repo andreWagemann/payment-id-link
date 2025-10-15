@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Copy, ExternalLink, Edit, Eye, Trash2 } from "lucide-react";
+import { LogOut, Plus, Copy, ExternalLink, Edit, Eye, Trash2, FileCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -114,10 +114,16 @@ const Dashboard = () => {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Payment AG – KYC Dashboard</h1>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Abmelden
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/completed")}>
+              <FileCheck className="h-4 w-4 mr-2" />
+              Abgeschlossene Onboardings
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Abmelden
+            </Button>
+          </div>
         </div>
       </header>
 
