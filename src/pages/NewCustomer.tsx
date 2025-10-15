@@ -359,62 +359,106 @@ const NewCustomer = () => {
         setShowMagicLink(true);
       }
 
-      // Delete and re-insert authorized persons
-      await supabase.from("authorized_persons").delete().eq("customer_id", currentCustomerId!);
-
-      // Save authorized persons
-      if (authorizedPersons.length > 0) {
-        const personsWithChecklist: Array<{
-          personData: any;
-          hasIdDocument: boolean;
-        }> = authorizedPersons
-          .filter((p) => p.first_name || p.last_name || p.email)
-          .map((p) => ({
-            personData: {
-              customer_id: currentCustomerId!, 
-              first_name: p.first_name,
-              last_name: p.last_name,
-              date_of_birth: p.date_of_birth || null,
-              place_of_birth: p.place_of_birth || null,
-              nationality: p.nationality || "DE",
-              email: p.email || null,
-              private_street: p.private_street || null,
-              private_postal_code: p.private_postal_code || null,
-              private_city: p.private_city || null,
-              private_country: p.private_country || "DE",
-              id_document_number: p.id_document_number || null,
-              id_document_issue_date: p.id_document_issue_date || null,
-              id_document_issuing_authority: p.id_document_issuing_authority || null,
-            },
-            hasIdDocument: p.id_document_available || false,
-          }));
-
-        if (personsWithChecklist.length > 0) {
-          const { data: savedPersons, error: personsError } = await supabase
-            .from("authorized_persons")
-            .insert(personsWithChecklist.map(p => p.personData))
-            .select();
-
-          if (personsError) throw personsError;
-
-          // Save ID document availability markers
-          if (savedPersons) {
-            const idDocChecklistItems = savedPersons
-              .map((savedPerson, index) => {
-                if (personsWithChecklist[index].hasIdDocument) {
-                  return {
-                    customer_id: currentCustomerId!,
-                    person_id: savedPerson.id,
-                    document_type: "id_document" as const,
-                    marked_as_available: true,
-                  };
-                }
-                return null;
+      // Handle authorized persons
+      if (isEditMode && customerId) {
+        // In edit mode, update or upsert existing persons
+        for (const person of authorizedPersons.filter((p) => p.first_name || p.last_name || p.email)) {
+          if (person.id) {
+            // Update existing person
+            const { error: updateError } = await supabase
+              .from("authorized_persons")
+              .update({
+                first_name: person.first_name,
+                last_name: person.last_name,
+                date_of_birth: person.date_of_birth || null,
+                place_of_birth: person.place_of_birth || null,
+                nationality: person.nationality || "DE",
+                email: person.email || null,
+                private_street: person.private_street || null,
+                private_postal_code: person.private_postal_code || null,
+                private_city: person.private_city || null,
+                private_country: person.private_country || "DE",
+                id_document_number: person.id_document_number || null,
+                id_document_issue_date: person.id_document_issue_date || null,
+                id_document_issuing_authority: person.id_document_issuing_authority || null,
               })
-              .filter(item => item !== null);
+              .eq("id", person.id);
 
-            if (idDocChecklistItems.length > 0) {
-              await supabase.from("document_checklist").insert(idDocChecklistItems);
+            if (updateError) throw updateError;
+
+            // Update or insert ID document availability
+            await supabase
+              .from("document_checklist")
+              .delete()
+              .eq("customer_id", customerId)
+              .eq("person_id", person.id)
+              .eq("document_type", "id_document");
+
+            if (person.id_document_available) {
+              await supabase.from("document_checklist").insert({
+                customer_id: customerId,
+                person_id: person.id,
+                document_type: "id_document" as const,
+                marked_as_available: true,
+              });
+            }
+          }
+        }
+      } else {
+        // In create mode, insert new persons
+        if (authorizedPersons.length > 0) {
+          const personsWithChecklist: Array<{
+            personData: any;
+            hasIdDocument: boolean;
+          }> = authorizedPersons
+            .filter((p) => p.first_name || p.last_name || p.email)
+            .map((p) => ({
+              personData: {
+                customer_id: currentCustomerId!, 
+                first_name: p.first_name,
+                last_name: p.last_name,
+                date_of_birth: p.date_of_birth || null,
+                place_of_birth: p.place_of_birth || null,
+                nationality: p.nationality || "DE",
+                email: p.email || null,
+                private_street: p.private_street || null,
+                private_postal_code: p.private_postal_code || null,
+                private_city: p.private_city || null,
+                private_country: p.private_country || "DE",
+                id_document_number: p.id_document_number || null,
+                id_document_issue_date: p.id_document_issue_date || null,
+                id_document_issuing_authority: p.id_document_issuing_authority || null,
+              },
+              hasIdDocument: p.id_document_available || false,
+            }));
+
+          if (personsWithChecklist.length > 0) {
+            const { data: savedPersons, error: personsError } = await supabase
+              .from("authorized_persons")
+              .insert(personsWithChecklist.map(p => p.personData))
+              .select();
+
+            if (personsError) throw personsError;
+
+            // Save ID document availability markers
+            if (savedPersons) {
+              const idDocChecklistItems = savedPersons
+                .map((savedPerson, index) => {
+                  if (personsWithChecklist[index].hasIdDocument) {
+                    return {
+                      customer_id: currentCustomerId!,
+                      person_id: savedPerson.id,
+                      document_type: "id_document" as const,
+                      marked_as_available: true,
+                    };
+                  }
+                  return null;
+                })
+                .filter(item => item !== null);
+
+              if (idDocChecklistItems.length > 0) {
+                await supabase.from("document_checklist").insert(idDocChecklistItems);
+              }
             }
           }
         }
@@ -437,8 +481,12 @@ const NewCustomer = () => {
         }
       }
 
-      // Delete and re-insert document checklist
-      await supabase.from("document_checklist").delete().eq("customer_id", currentCustomerId!);
+      // Update company-level document checklist (not person-specific)
+      await supabase
+        .from("document_checklist")
+        .delete()
+        .eq("customer_id", currentCustomerId!)
+        .is("person_id", null);
       
       if (availableDocuments.length > 0) {
         const checklistData = availableDocuments.map(docType => ({
