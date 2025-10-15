@@ -4,8 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Copy, ExternalLink, Edit, Eye } from "lucide-react";
+import { LogOut, Plus, Copy, ExternalLink, Edit, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Customer = {
   id: string;
@@ -20,6 +30,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -69,6 +81,32 @@ const Dashboard = () => {
     };
     const config = variants[status] || variants.draft;
     return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const handleDeleteClick = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!customerToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from("customers")
+        .delete()
+        .eq("id", customerToDelete.id);
+
+      if (error) throw error;
+
+      toast.success("Kunde erfolgreich gelöscht");
+      setCustomers(customers.filter(c => c.id !== customerToDelete.id));
+    } catch (error: any) {
+      toast.error("Fehler beim Löschen des Kunden");
+    } finally {
+      setDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+    }
   };
 
   return (
@@ -124,7 +162,7 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {customer.status === "completed" && (
                       <Button
                         variant="default"
@@ -165,6 +203,14 @@ const Dashboard = () => {
                         </Button>
                       </>
                     )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteClick(customer)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Löschen
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -172,6 +218,23 @@ const Dashboard = () => {
           </div>
         )}
       </main>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Kunde löschen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie "{customerToDelete?.company_name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
