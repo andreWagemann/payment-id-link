@@ -69,23 +69,9 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
         };
       });
 
-      // Personenbezogene Dokumente
+      // Personenbezogene Dokumente - nur Adressnachweise für Personen außerhalb Deutschlands
       authPersons?.forEach(person => {
         const personName = `${person.first_name} ${person.last_name}`.trim();
-        
-        // ID-Dokument prüfen - wenn bereits hochgeladen ODER als verfügbar markiert
-        const hasIdDocument = docs?.some(d => d.document_type === 'id_document' && d.person_id === person.id) || false;
-        const idMarkedAvailable = checklistItems?.find(c => c.document_type === 'id_document' && c.person_id === person.id)?.marked_as_available || false;
-        
-        const idKey = `id_document_${person.id}`;
-        
-        // IMMER in Checklist aufnehmen, aber Status korrekt setzen
-        checklistMap[idKey] = {
-          required: true,
-          uploaded: hasIdDocument,
-          markedAvailable: idMarkedAvailable,
-          personName: `Ausweisdokument - ${personName}`,
-        };
         
         // Adressnachweis nur wenn Person außerhalb Deutschlands
         if (person.country && person.country !== 'DE') {
@@ -122,11 +108,8 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
       let actualDocType = selectedType;
       let actualPersonId = selectedPersonId;
       
-      // Wenn selectedType ein Key wie "id_document_UUID" ist, extrahiere die Info
-      if (selectedType.startsWith('id_document_')) {
-        actualDocType = 'id_document';
-        actualPersonId = selectedType.replace('id_document_', '');
-      } else if (selectedType.startsWith('proof_of_address_')) {
+      // Wenn selectedType ein Key wie "proof_of_address_UUID" ist, extrahiere die Info
+      if (selectedType.startsWith('proof_of_address_')) {
         actualDocType = 'proof_of_address';
         actualPersonId = selectedType.replace('proof_of_address_', '');
       }
@@ -259,11 +242,8 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
             <Label>Dokumenttyp</Label>
             <Select value={selectedType} onValueChange={(value) => {
               setSelectedType(value);
-              // Wenn ID-Dokument ausgewählt, prüfe ob es für eine Person ist
-              if (value.startsWith('id_document_')) {
-                const personId = value.replace('id_document_', '');
-                setSelectedPersonId(personId);
-              } else if (value.startsWith('proof_of_address_')) {
+              // Wenn Adressnachweis ausgewählt, prüfe ob es für eine Person ist
+              if (value.startsWith('proof_of_address_')) {
                 const personId = value.replace('proof_of_address_', '');
                 setSelectedPersonId(personId);
               } else {
@@ -283,10 +263,10 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
                     </SelectItem>
                   ))}
                 
-                {/* Personenbezogene Dokumente aus der Checkliste - nur noch nicht erledigte */}
+                {/* Personenbezogene Adressnachweise aus der Checkliste - nur noch nicht erledigte */}
                 {Object.entries(checklist)
                   .filter(([key, status]) => 
-                    (key.startsWith('id_document_') || key.startsWith('proof_of_address_')) && 
+                    key.startsWith('proof_of_address_') && 
                     !status.uploaded && 
                     !status.markedAvailable
                   )
