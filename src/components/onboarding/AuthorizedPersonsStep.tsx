@@ -33,6 +33,7 @@ type Person = {
   id_document_issuing_authority: string;
   document_uploaded?: boolean;
   document_file_name?: string;
+  id_document_available?: boolean;
 };
 
 const AuthorizedPersonsStep = ({ customerId, onComplete, onBack }: AuthorizedPersonsStepProps) => {
@@ -69,12 +70,21 @@ const AuthorizedPersonsStep = ({ customerId, onComplete, onBack }: AuthorizedPer
         .eq("customer_id", customerId);
 
       if (authPersons && authPersons.length > 0) {
-        // Load document upload status for each person
+        // Load document upload status and checklist status for each person
         const personsWithDocs = await Promise.all(
           authPersons.map(async (p) => {
             const { data: docs } = await supabase
               .from("documents")
               .select("file_name")
+              .eq("customer_id", customerId)
+              .eq("person_id", p.id)
+              .eq("document_type", "id_document")
+              .maybeSingle();
+
+            // Check if document is marked as available in checklist
+            const { data: checklist } = await supabase
+              .from("document_checklist")
+              .select("marked_as_available")
               .eq("customer_id", customerId)
               .eq("person_id", p.id)
               .eq("document_type", "id_document")
@@ -97,6 +107,7 @@ const AuthorizedPersonsStep = ({ customerId, onComplete, onBack }: AuthorizedPer
               id_document_issuing_authority: p.id_document_issuing_authority || "",
               document_uploaded: !!docs,
               document_file_name: docs?.file_name,
+              id_document_available: checklist?.marked_as_available || false,
             };
           })
         );
@@ -226,8 +237,8 @@ const AuthorizedPersonsStep = ({ customerId, onComplete, onBack }: AuthorizedPer
         return;
       }
 
-      // Check if document is uploaded
-      if (!person.document_uploaded) {
+      // Check if document is uploaded or marked as available
+      if (!person.document_uploaded && !person.id_document_available) {
         toast.error(`Person ${i + 1}: Bitte laden Sie ein Ausweisdokument hoch`);
         return;
       }
@@ -502,7 +513,15 @@ const AuthorizedPersonsStep = ({ customerId, onComplete, onBack }: AuthorizedPer
                 <div className="space-y-4">
                   <h5 className="font-medium text-sm text-muted-foreground">Ausweisdokument *</h5>
                   
-                  {person.document_uploaded ? (
+                  {person.id_document_available ? (
+                    <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-900">Ausweis liegt vor</p>
+                        <p className="text-xs text-green-700">Das Ausweisdokument wurde vom Vertriebler als vorliegend markiert</p>
+                      </div>
+                    </div>
+                  ) : person.document_uploaded ? (
                     <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
                       <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
                       <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
