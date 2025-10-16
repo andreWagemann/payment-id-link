@@ -73,20 +73,19 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
       authPersons?.forEach(person => {
         const personName = `${person.first_name} ${person.last_name}`.trim();
         
-        // ID-Dokument prüfen - wenn bereits hochgeladen ODER als verfügbar markiert, nicht mehr anfordern
+        // ID-Dokument prüfen - wenn bereits hochgeladen ODER als verfügbar markiert
         const hasIdDocument = docs?.some(d => d.document_type === 'id_document' && d.person_id === person.id) || false;
         const idMarkedAvailable = checklistItems?.find(c => c.document_type === 'id_document' && c.person_id === person.id)?.marked_as_available || false;
         
-        // Nur wenn noch kein ID-Dokument hochgeladen UND nicht als verfügbar markiert, in Checklist aufnehmen
-        if (!hasIdDocument && !idMarkedAvailable) {
-          const idKey = `id_document_${person.id}`;
-          checklistMap[idKey] = {
-            required: true,
-            uploaded: false,
-            markedAvailable: false,
-            personName: `Ausweisdokument - ${personName}`,
-          };
-        }
+        const idKey = `id_document_${person.id}`;
+        
+        // IMMER in Checklist aufnehmen, aber Status korrekt setzen
+        checklistMap[idKey] = {
+          required: true,
+          uploaded: hasIdDocument,
+          markedAvailable: idMarkedAvailable,
+          personName: `Ausweisdokument - ${personName}`,
+        };
         
         // Adressnachweis nur wenn Person außerhalb Deutschlands
         if (person.country && person.country !== 'DE') {
@@ -284,7 +283,7 @@ const DocumentsStep = ({ customerId, legalForm, onComplete, onBack }: DocumentsS
                     </SelectItem>
                   ))}
                 
-                {/* Personenbezogene Dokumente aus der Checkliste */}
+                {/* Personenbezogene Dokumente aus der Checkliste - nur noch nicht erledigte */}
                 {Object.entries(checklist)
                   .filter(([key, status]) => 
                     (key.startsWith('id_document_') || key.startsWith('proof_of_address_')) && 
