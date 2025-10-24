@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, FileText } from "lucide-react";
+import { ArrowLeft, Download, FileText, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -91,6 +91,7 @@ const CustomerDetail = () => {
   const [sepaMandate, setSepaMandate] = useState<SepaMandate | null>(null);
   const [signature, setSignature] = useState<Signature | null>(null);
   const [generatingContract, setGeneratingContract] = useState(false);
+  const [uploadingTemplate, setUploadingTemplate] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -216,6 +217,34 @@ const CustomerDetail = () => {
     }
   };
 
+  const handleTemplateUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingTemplate(true);
+      toast.info("Template wird hochgeladen...");
+
+      const { error } = await supabase.storage
+        .from('kyc-documents')
+        .upload('templates/contract-template.pdf', file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (error) throw error;
+
+      toast.success("Template wurde erfolgreich hochgeladen!");
+    } catch (error: any) {
+      console.error("Error uploading template:", error);
+      toast.error("Fehler beim Hochladen des Templates");
+    } finally {
+      setUploadingTemplate(false);
+      // Reset input
+      event.target.value = '';
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; label: string }> = {
       draft: { variant: "secondary", label: "Entwurf" },
@@ -282,14 +311,36 @@ const CustomerDetail = () => {
             </div>
             <div className="flex items-center gap-3">
               {customer.status === 'completed' && (
-                <Button
-                  onClick={generateContract}
-                  disabled={generatingContract}
-                  variant="default"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  {generatingContract ? "Generiere..." : "Vertrag herunterladen"}
-                </Button>
+                <>
+                  <Button
+                    onClick={generateContract}
+                    disabled={generatingContract}
+                    variant="default"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {generatingContract ? "Generiere..." : "Vertrag herunterladen"}
+                  </Button>
+                  
+                  {/* Temporärer Upload Button */}
+                  <div>
+                    <input
+                      type="file"
+                      id="template-upload"
+                      accept=".pdf"
+                      onChange={handleTemplateUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      onClick={() => document.getElementById('template-upload')?.click()}
+                      disabled={uploadingTemplate}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {uploadingTemplate ? "Lädt hoch..." : "Template hochladen"}
+                    </Button>
+                  </div>
+                </>
               )}
               {getStatusBadge(customer.status)}
             </div>
