@@ -91,7 +91,7 @@ const CustomerDetail = () => {
   const [sepaMandate, setSepaMandate] = useState<SepaMandate | null>(null);
   const [signature, setSignature] = useState<Signature | null>(null);
   const [generatingContract, setGeneratingContract] = useState(false);
-  const [uploadingTemplate, setUploadingTemplate] = useState(false);
+  const [contracts, setContracts] = useState<Document[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -141,6 +141,12 @@ const CustomerDetail = () => {
         .select("*")
         .eq("customer_id", customerId);
       setDocuments(docs || []);
+      
+      // Filtere Verträge separat
+      const contractDocs = (docs || []).filter(doc => 
+        doc.document_type === 'other' && doc.file_name.startsWith('Vertrag_')
+      );
+      setContracts(contractDocs);
 
       // Load SEPA mandate
       const { data: mandate } = await supabase
@@ -269,7 +275,6 @@ const CustomerDetail = () => {
     if (!file) return;
 
     try {
-      setUploadingTemplate(true);
       toast.info("Template wird hochgeladen...");
 
       const { error } = await supabase.storage
@@ -286,8 +291,6 @@ const CustomerDetail = () => {
       console.error("Error uploading template:", error);
       toast.error("Fehler beim Hochladen des Templates");
     } finally {
-      setUploadingTemplate(false);
-      // Reset input
       event.target.value = '';
     }
   };
@@ -377,26 +380,6 @@ const CustomerDetail = () => {
                     <FileText className="h-4 w-4 mr-2" />
                     {generatingContract ? "Generiert..." : "Neu generieren"}
                   </Button>
-                  
-                  {/* Temporärer Upload Button */}
-                  <div>
-                    <input
-                      type="file"
-                      id="template-upload"
-                      accept=".pdf"
-                      onChange={handleTemplateUpload}
-                      className="hidden"
-                    />
-                    <Button
-                      onClick={() => document.getElementById('template-upload')?.click()}
-                      disabled={uploadingTemplate}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      {uploadingTemplate ? "Lädt hoch..." : "Template hochladen"}
-                    </Button>
-                  </div>
                 </>
               )}
               {getStatusBadge(customer.status)}
@@ -407,11 +390,12 @@ const CustomerDetail = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="company">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="company">Unternehmen</TabsTrigger>
             <TabsTrigger value="authorized">Vertr.ber.</TabsTrigger>
             <TabsTrigger value="beneficial">Wirtsch.Ber.</TabsTrigger>
             <TabsTrigger value="documents">Dokumente</TabsTrigger>
+            <TabsTrigger value="contract">Vertrag</TabsTrigger>
             <TabsTrigger value="sepa">SEPA</TabsTrigger>
             <TabsTrigger value="signature">Unterschrift</TabsTrigger>
           </TabsList>
@@ -611,6 +595,55 @@ const CustomerDetail = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="contract" className="space-y-4 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Vertragshistorie</CardTitle>
+                <CardDescription>
+                  Übersicht aller generierten Verträge
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {contracts.length === 0 ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    Noch keine Verträge generiert
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {contracts.map((contract) => (
+                      <div
+                        key={contract.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-primary" />
+                          <div>
+                            <p className="font-medium">{contract.file_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Generiert am {new Date(contract.uploaded_at).toLocaleDateString("de-DE")} um{" "}
+                              {new Date(contract.uploaded_at).toLocaleTimeString("de-DE", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadDocument(contract.file_path, contract.file_name)}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="sepa" className="space-y-4 mt-6">
