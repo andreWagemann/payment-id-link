@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "pdf-lib": "https://cdn.skypack.dev/pdf-lib@1.17.1"
+  }
+}

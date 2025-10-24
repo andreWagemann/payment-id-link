@@ -90,6 +90,7 @@ const CustomerDetail = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [sepaMandate, setSepaMandate] = useState<SepaMandate | null>(null);
   const [signature, setSignature] = useState<Signature | null>(null);
+  const [generatingContract, setGeneratingContract] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -185,6 +186,36 @@ const CustomerDetail = () => {
     }
   };
 
+  const generateContract = async () => {
+    if (!customerId) return;
+    
+    try {
+      setGeneratingContract(true);
+      toast.info("Vertrag wird generiert...");
+
+      const { data, error } = await supabase.functions.invoke('generate-contract', {
+        body: { customerId }
+      });
+
+      if (error) throw error;
+
+      toast.success("Vertrag wurde erfolgreich erstellt");
+      
+      // Download the generated contract
+      if (data.filePath && data.fileName) {
+        await downloadDocument(data.filePath, data.fileName);
+      }
+      
+      // Reload documents to show the new contract
+      await loadCustomerData();
+    } catch (error: any) {
+      console.error("Error generating contract:", error);
+      toast.error("Fehler beim Generieren des Vertrags");
+    } finally {
+      setGeneratingContract(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; label: string }> = {
       draft: { variant: "secondary", label: "Entwurf" },
@@ -249,7 +280,19 @@ const CustomerDetail = () => {
                 {new Date(customer.created_at).toLocaleDateString("de-DE")}
               </p>
             </div>
-            {getStatusBadge(customer.status)}
+            <div className="flex items-center gap-3">
+              {customer.status === 'completed' && (
+                <Button
+                  onClick={generateContract}
+                  disabled={generatingContract}
+                  variant="default"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  {generatingContract ? "Generiere..." : "Vertrag herunterladen"}
+                </Button>
+              )}
+              {getStatusBadge(customer.status)}
+            </div>
           </div>
         </div>
       </header>
