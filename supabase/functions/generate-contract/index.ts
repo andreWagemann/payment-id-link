@@ -327,7 +327,8 @@ Deno.serve(async (req) => {
 
     // Speichere PDF
     const pdfBytes = await pdfDoc.save();
-    const fileName = `Vertrag_${customer.company_name.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `Vertrag_${customer.company_name.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.pdf`;
     
     // Speichere im Storage
     const { error: uploadError } = await supabase.storage
