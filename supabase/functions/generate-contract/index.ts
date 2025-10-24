@@ -72,7 +72,11 @@ Deno.serve(async (req) => {
 
     if (downloadError) {
       console.error('Error downloading template:', downloadError);
-      throw new Error('Template konnte nicht geladen werden: ' + downloadError.message);
+      throw new Error('Template konnte nicht geladen werden: ' + JSON.stringify(downloadError));
+    }
+
+    if (!templateData) {
+      throw new Error('Template ist leer');
     }
 
     console.log('Template loaded, parsing PDF...');
