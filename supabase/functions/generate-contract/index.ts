@@ -91,103 +91,203 @@ Deno.serve(async (req) => {
     const page1 = pages[0];
     const { height } = page1.getSize();
     
-    // Kundennummer (oben rechts in der Tabelle)
-    page1.drawText(customerId.substring(0, 10), { x: 95, y: height - 85, size: fontSize, font });
+    // Header - Kundennummer und Datum (Zeile oben)
+    page1.drawText(customerId.substring(0, 13), { x: 37, y: height - 93, size: 8, font });
+    page1.drawText(new Date().toLocaleDateString('de-DE'), { x: 470, y: height - 93, size: 8, font });
     
-    // Leistungsbeginn
-    page1.drawText(new Date().toLocaleDateString('de-DE'), { x: 180, y: height - 85, size: fontSize, font });
+    // Tabelle Zeile 1 - Kundennummer, Leistungsbeginn, MCC, Vertragslaufzeit
+    const tableY = height - 119;
+    page1.drawText('00', { x: 50, y: tableY, size: 8, font }); // Kundennummer Platzhalter
+    // Leistungsbeginn leer lassen
+    // MCC leer lassen  
+    // Vertragslaufzeit leer lassen
     
-    // Kundenname / Handelsname
-    page1.drawText(customer.company_name, { x: 95, y: height - 158, size: fontSize, font });
+    // Firmenname und Rechtsform (direkt unter dem Text)
+    page1.drawText(customer.company_name, { x: 37, y: height - 169, size: 10, font });
+    page1.drawText(customer.legal_form.toUpperCase(), { x: 420, y: height - 169, size: 10, font });
     
-    // Rechtsform
-    page1.drawText(customer.legal_form.toUpperCase(), { x: 420, y: height - 158, size: fontSize, font });
-    
-    // USt-IdNr.
-    if (customer.vat_id) {
-      page1.drawText(customer.vat_id, { x: 180, y: height - 173, size: fontSize, font });
-    }
-    
-    // HR-Nummer
-    if (customer.commercial_register) {
-      page1.drawText(customer.commercial_register, { x: 350, y: height - 173, size: fontSize, font });
-    }
+    // 1. Kontaktinformationen Tabelle
+    // Kundenname / Handelsname (leer, da schon oben)
+    // rechtl. Firmierung (gleich wie Firmenname, leer lassen wenn identisch)
+    // Rechtsform (schon gefüllt)
     
     // Firmenadresse - Straße
-    page1.drawText(customer.street || '', { x: 125, y: height - 198, size: fontSize, font });
+    page1.drawText(customer.street || '', { x: 37, y: height - 216, size: 9, font });
     
-    // PLZ
-    page1.drawText(customer.postal_code || '', { x: 95, y: height - 213, size: fontSize, font });
+    // Telefon + PLZ + Stadt (in einer Zeile)
+    const addressLineY = height - 228;
+    // Telefon leer
+    page1.drawText(customer.postal_code || '', { x: 90, y: addressLineY, size: 9, font });
+    page1.drawText(customer.city || '', { x: 180, y: addressLineY, size: 9, font });
     
-    // Stadt
-    page1.drawText(customer.city || '', { x: 180, y: height - 213, size: fontSize, font });
+    // Zeile: Filiale, USt-IdNr., HR-Nummer, Registergericht
+    const taxLineY = height - 240;
+    // Filiale leer
+    if (customer.vat_id) {
+      page1.drawText(customer.vat_id, { x: 160, y: taxLineY, size: 8, font });
+    }
+    if (customer.commercial_register) {
+      page1.drawText(customer.commercial_register, { x: 300, y: taxLineY, size: 8, font });
+    }
+    // Registergericht leer
     
-    // Ländercode
-    page1.drawText(customer.country || 'DE', { x: 95, y: height - 228, size: fontSize, font });
-
-    // Vertretungsberechtigte Personen
+    // Ländercode DE
+    page1.drawText(customer.country || 'DE', { x: 37, y: height - 252, size: 9, font });
+    
+    // Firmenadresse Tabelle (leer, da schon oben)
+    
+    // Abweichende Standortadresse (leer lassen)
+    
+    // Ansprechpartner Tabelle
+    if (authorizedPersons && authorizedPersons.length > 0) {
+      const person1 = authorizedPersons[0];
+      const contactY = height - 344;
+      
+      // Vorname(n), Name, E-Mail, Telefon Zentrale
+      page1.drawText(person1.first_name, { x: 50, y: contactY, size: 8, font });
+      page1.drawText(person1.last_name, { x: 140, y: contactY, size: 8, font });
+      if (person1.email) {
+        page1.drawText(person1.email, { x: 230, y: contactY, size: 8, font });
+      }
+      if (person1.phone) {
+        page1.drawText(person1.phone, { x: 400, y: contactY, size: 8, font });
+      }
+    }
+    
+    // Zeile unter Ansprechpartner: Stadt, Geburtsdatum?, Ländercode
+    const personInfoY = height - 357;
+    if (authorizedPersons && authorizedPersons.length > 0) {
+      const person1 = authorizedPersons[0];
+      if (person1.private_city) {
+        page1.drawText(person1.private_city, { x: 37, y: personInfoY, size: 8, font });
+      }
+      if (person1.date_of_birth) {
+        page1.drawText(new Date(person1.date_of_birth).toLocaleDateString('de-DE'), { x: 180, y: personInfoY, size: 8, font });
+      }
+      if (person1.private_country) {
+        page1.drawText(person1.private_country, { x: 450, y: personInfoY, size: 8, font });
+      }
+    }
+    
+    // Gläubiger-ID Nr. (leer)
+    
+    // Lieferadresse
+    const deliveryY = height - 370;
+    page1.drawText(customer.street || '', { x: 310, y: deliveryY, size: 8, font });
+    const deliveryCityY = height - 382;
+    page1.drawText(customer.postal_code || '', { x: 310, y: deliveryCityY, size: 8, font });
+    page1.drawText(customer.city || '', { x: 380, y: deliveryCityY, size: 8, font });
+    
+    // 2. Rechtliche Vertreter
+    // Checkbox: Kunde ist eine juristische Person (X setzen)
+    page1.drawText('X', { x: 37, y: height - 417, size: 10, font });
+    
+    // Vertretungsberechtigung (Einzelvertretung oder gemeinsam)
+    // Einzelvertretungsberechtigung checkbox
+    page1.drawText('X', { x: 37, y: height - 442, size: 10, font });
+    
     if (authorizedPersons && authorizedPersons.length > 0) {
       const person1 = authorizedPersons[0];
       
-      // Person 1 - Vorname + Nachname
-      page1.drawText(`${person1.first_name} ${person1.last_name}`, { x: 140, y: height - 330, size: fontSize, font });
+      // Vertreter 1 Tabelle: Anrede, Vorname(n), Nachname
+      const rep1Y = height - 465;
+      // Anrede leer
+      page1.drawText(person1.first_name, { x: 100, y: rep1Y, size: 8, font });
+      page1.drawText(person1.last_name, { x: 240, y: rep1Y, size: 8, font });
       
-      // Geburtsort
+      // Geburtsort, Geburtsdatum, Nationalität (darunter)
+      const rep1DetailsY = height - 477;
       if (person1.place_of_birth) {
-        page1.drawText(person1.place_of_birth, { x: 95, y: height - 345, size: fontSize, font });
+        page1.drawText(person1.place_of_birth, { x: 80, y: rep1DetailsY, size: 8, font });
       }
-      
-      // Geburtsdatum
       if (person1.date_of_birth) {
-        page1.drawText(new Date(person1.date_of_birth).toLocaleDateString('de-DE'), { x: 200, y: height - 345, size: fontSize, font });
+        page1.drawText(new Date(person1.date_of_birth).toLocaleDateString('de-DE'), { x: 210, y: rep1DetailsY, size: 8, font });
       }
-      
-      // Nationalität
       if (person1.nationality) {
-        page1.drawText(person1.nationality, { x: 350, y: height - 345, size: fontSize, font });
+        page1.drawText(person1.nationality, { x: 370, y: rep1DetailsY, size: 8, font });
       }
       
-      // Privatadresse - Straße
+      // Privatadresse Tabelle
+      const rep1AddressY = height - 503;
       if (person1.private_street) {
-        page1.drawText(person1.private_street, { x: 125, y: height - 370, size: fontSize, font });
+        page1.drawText(person1.private_street, { x: 120, y: rep1AddressY, size: 8, font });
       }
-      
-      // PLZ
       if (person1.private_postal_code) {
-        page1.drawText(person1.private_postal_code, { x: 95, y: height - 385, size: fontSize, font });
+        page1.drawText(person1.private_postal_code, { x: 280, y: rep1AddressY, size: 8, font });
       }
-      
-      // Stadt
       if (person1.private_city) {
-        page1.drawText(person1.private_city, { x: 180, y: height - 385, size: fontSize, font });
+        page1.drawText(person1.private_city, { x: 340, y: rep1AddressY, size: 8, font });
+      }
+      if (person1.private_country) {
+        page1.drawText(person1.private_country, { x: 480, y: rep1AddressY, size: 8, font });
       }
       
-      // Ausweisnummer
+      // Ausweisdokument Tabelle
+      const rep1IdY = height - 528;
       if (person1.id_document_number) {
-        page1.drawText(person1.id_document_number, { x: 200, y: height - 400, size: fontSize, font });
+        page1.drawText(person1.id_document_number, { x: 100, y: rep1IdY, size: 8, font });
+      }
+      if (person1.id_document_issue_date) {
+        page1.drawText(new Date(person1.id_document_issue_date).toLocaleDateString('de-DE'), { x: 240, y: rep1IdY, size: 8, font });
+      }
+      if (person1.id_document_issuing_authority) {
+        page1.drawText(person1.id_document_issuing_authority, { x: 380, y: rep1IdY, size: 8, font });
       }
       
-      // E-Mail
+      // 1. Persönliche Identifizierung
+      // Checkboxen (Postident, Videoident, E-Mail, Telefonnummer) - leer lassen
+      
+      // E-Mail unter den Checkboxen
       if (person1.email) {
-        page1.drawText(person1.email, { x: 95, y: height - 445, size: fontSize, font });
+        page1.drawText(person1.email, { x: 140, y: height - 563, size: 8, font });
       }
-
+      if (person1.phone) {
+        page1.drawText(person1.phone, { x: 380, y: height - 563, size: 8, font });
+      }
+      
+      // "Ich handle in eigenem Namen..." Checkbox
+      page1.drawText('X', { x: 37, y: height - 595, size: 8, font });
+      
       // Zweite Person falls vorhanden
       if (authorizedPersons.length > 1) {
         const person2 = authorizedPersons[1];
         
-        page1.drawText(`${person2.first_name} ${person2.last_name}`, { x: 140, y: height - 490, size: fontSize, font });
+        const rep2Y = height - 658;
+        page1.drawText(person2.first_name, { x: 100, y: rep2Y, size: 8, font });
+        page1.drawText(person2.last_name, { x: 240, y: rep2Y, size: 8, font });
         
+        const rep2DetailsY = height - 670;
         if (person2.place_of_birth) {
-          page1.drawText(person2.place_of_birth, { x: 95, y: height - 505, size: fontSize, font });
+          page1.drawText(person2.place_of_birth, { x: 80, y: rep2DetailsY, size: 8, font });
+        }
+        if (person2.date_of_birth) {
+          page1.drawText(new Date(person2.date_of_birth).toLocaleDateString('de-DE'), { x: 210, y: rep2DetailsY, size: 8, font });
+        }
+        if (person2.nationality) {
+          page1.drawText(person2.nationality, { x: 370, y: rep2DetailsY, size: 8, font });
         }
         
-        if (person2.date_of_birth) {
-          page1.drawText(new Date(person2.date_of_birth).toLocaleDateString('de-DE'), { x: 200, y: height - 505, size: fontSize, font });
+        const rep2AddressY = height - 696;
+        if (person2.private_street) {
+          page1.drawText(person2.private_street, { x: 120, y: rep2AddressY, size: 8, font });
+        }
+        if (person2.private_postal_code) {
+          page1.drawText(person2.private_postal_code, { x: 280, y: rep2AddressY, size: 8, font });
+        }
+        if (person2.private_city) {
+          page1.drawText(person2.private_city, { x: 340, y: rep2AddressY, size: 8, font });
+        }
+        
+        const rep2IdY = height - 721;
+        if (person2.id_document_number) {
+          page1.drawText(person2.id_document_number, { x: 100, y: rep2IdY, size: 8, font });
         }
         
         if (person2.email) {
-          page1.drawText(person2.email, { x: 95, y: height - 605, size: fontSize, font });
+          page1.drawText(person2.email, { x: 140, y: height - 756, size: 8, font });
+        }
+        if (person2.phone) {
+          page1.drawText(person2.phone, { x: 380, y: height - 756, size: 8, font });
         }
       }
     }
