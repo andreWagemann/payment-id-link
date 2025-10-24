@@ -89,18 +89,18 @@ Deno.serve(async (req) => {
     const { height } = page1.getSize();
 
     // 1. Kontaktinformationen - Firmenname und Rechtsform (beide in gleicher Höhe)
-    page1.drawText(customer.company_name, { x: 52, y: height - 200, size: 9, font });
-    page1.drawText(customer.legal_form.toUpperCase(), { x: 465, y: height - 200, size: 9, font });
+    page1.drawText(customer.company_name, { x: 50, y: height - 180, size: 9, font });
+    page1.drawText(customer.legal_form.toUpperCase(), { x: 465, y: height - 180, size: 9, font });
 
     // Firmenadresse: Straße, PLZ, Stadt, Ländercode (alle auf einer Zeile mit mehr Abstand)
     if (customer.street) {
-      page1.drawText(customer.street, { x: 52, y: height - 256, size: 9, font });
+      page1.drawText(customer.street, { x: 50, y: height - 276, size: 9, font });
     }
     if (customer.postal_code) {
-      page1.drawText(customer.postal_code, { x: 300, y: height - 256, size: 9, font });
+      page1.drawText(customer.postal_code, { x: 270, y: height - 276, size: 9, font });
     }
     if (customer.city) {
-      page1.drawText(customer.city, { x: 305, y: height - 256, size: 9, font });
+      page1.drawText(customer.city, { x: 335, y: height - 276, size: 9, font });
     }
     page1.drawText(customer.country || "DE", { x: 500, y: height - 256, size: 9, font });
 
@@ -109,8 +109,8 @@ Deno.serve(async (req) => {
       const person1 = authorizedPersons[0];
 
       // Vorname, Name, E-Mail
-      page1.drawText(person1.first_name, { x: 155, y: height - 307, size: 8, font });
-      page1.drawText(person1.last_name, { x: 245, y: height - 307, size: 8, font });
+      page1.drawText(person1.first_name, { x: 50, y: height - 347, size: 8, font });
+      page1.drawText(person1.last_name, { x: 175, y: height - 347, size: 8, font });
       if (person1.email) {
         page1.drawText(person1.email, { x: 360, y: height - 307, size: 8, font });
       }
