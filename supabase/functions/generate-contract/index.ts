@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
     const { height } = page1.getSize();
 
     // 1. Kontaktinformationen - Firmenname und Rechtsform (beide in gleicher Höhe)
-    page1.drawText(customer.company_name, { x: 55, y: height - 350, size: 9, font });
+    page1.drawText(customer.company_name, { x: 105, y: height - 350, size: 9, font });
     page1.drawText(customer.legal_form.toUpperCase(), { x: 465, y: height - 350, size: 9, font });
 
     // Firmenadresse: Straße, PLZ, Stadt, Ländercode (alle auf einer Zeile mit mehr Abstand)
