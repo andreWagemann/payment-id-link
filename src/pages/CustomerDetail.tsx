@@ -359,31 +359,7 @@ const CustomerDetail = () => {
                 {new Date(customer.created_at).toLocaleDateString("de-DE")}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              {customer.status === 'completed' && (
-                <>
-                  <Button
-                    onClick={downloadContract}
-                    disabled={generatingContract}
-                    variant="default"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    {generatingContract ? "Lädt..." : "Vertrag herunterladen"}
-                  </Button>
-                  
-                  <Button
-                    onClick={regenerateContract}
-                    disabled={generatingContract}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    {generatingContract ? "Generiert..." : "Neu generieren"}
-                  </Button>
-                </>
-              )}
-              {getStatusBadge(customer.status)}
-            </div>
+            {getStatusBadge(customer.status)}
           </div>
         </div>
       </header>
@@ -600,10 +576,36 @@ const CustomerDetail = () => {
           <TabsContent value="contract" className="space-y-4 mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Vertragshistorie</CardTitle>
-                <CardDescription>
-                  Übersicht aller generierten Verträge
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Vertragshistorie</CardTitle>
+                    <CardDescription>
+                      Übersicht aller generierten Verträge
+                    </CardDescription>
+                  </div>
+                  {customer.status === 'completed' && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={downloadContract}
+                        disabled={generatingContract}
+                        variant="default"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        {generatingContract ? "Lädt..." : "Vertrag herunterladen"}
+                      </Button>
+                      
+                      <Button
+                        onClick={regenerateContract}
+                        disabled={generatingContract}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        {generatingContract ? "Generiert..." : "Neu generieren"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {contracts.length === 0 ? (
