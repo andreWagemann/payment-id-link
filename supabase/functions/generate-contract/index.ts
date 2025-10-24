@@ -95,199 +95,148 @@ Deno.serve(async (req) => {
     page1.drawText(customerId.substring(0, 13), { x: 37, y: height - 93, size: 8, font });
     page1.drawText(new Date().toLocaleDateString('de-DE'), { x: 470, y: height - 93, size: 8, font });
     
-    // Tabelle Zeile 1 - Kundennummer, Leistungsbeginn, MCC, Vertragslaufzeit
-    const tableY = height - 119;
-    page1.drawText('00', { x: 50, y: tableY, size: 8, font }); // Kundennummer Platzhalter
-    // Leistungsbeginn leer lassen
-    // MCC leer lassen  
-    // Vertragslaufzeit leer lassen
+    // Tabelle Zeile 1 - nur die 00 Felder ausfüllen
+    page1.drawText('00', { x: 50, y: height - 119, size: 8, font });
     
-    // Firmenname und Rechtsform (direkt unter dem Text)
+    // Firmenname (links) und Rechtsform (rechts) in einer Zeile
     page1.drawText(customer.company_name, { x: 37, y: height - 169, size: 10, font });
-    page1.drawText(customer.legal_form.toUpperCase(), { x: 420, y: height - 169, size: 10, font });
+    page1.drawText(customer.legal_form.toUpperCase(), { x: 460, y: height - 169, size: 10, font });
     
-    // 1. Kontaktinformationen Tabelle
-    // Kundenname / Handelsname (leer, da schon oben)
-    // rechtl. Firmierung (gleich wie Firmenname, leer lassen wenn identisch)
-    // Rechtsform (schon gefüllt)
+    // Adresszeile: Straße
+    page1.drawText(customer.street || '', { x: 37, y: height - 200, size: 9, font });
     
-    // Firmenadresse - Straße
-    page1.drawText(customer.street || '', { x: 37, y: height - 216, size: 9, font });
+    // Zeile darunter: PLZ + Stadt
+    page1.drawText(customer.postal_code || '', { x: 95, y: height - 213, size: 9, font });
+    page1.drawText(customer.city || '', { x: 155, y: height - 213, size: 9, font });
     
-    // Telefon + PLZ + Stadt (in einer Zeile)
-    const addressLineY = height - 228;
-    // Telefon leer
-    page1.drawText(customer.postal_code || '', { x: 90, y: addressLineY, size: 9, font });
-    page1.drawText(customer.city || '', { x: 180, y: addressLineY, size: 9, font });
+    // DE (Ländercode)
+    page1.drawText(customer.country || 'DE', { x: 37, y: height - 233, size: 9, font });
     
-    // Zeile: Filiale, USt-IdNr., HR-Nummer, Registergericht
-    const taxLineY = height - 240;
-    // Filiale leer
-    if (customer.vat_id) {
-      page1.drawText(customer.vat_id, { x: 160, y: taxLineY, size: 8, font });
-    }
-    if (customer.commercial_register) {
-      page1.drawText(customer.commercial_register, { x: 300, y: taxLineY, size: 8, font });
-    }
-    // Registergericht leer
-    
-    // Ländercode DE
-    page1.drawText(customer.country || 'DE', { x: 37, y: height - 252, size: 9, font });
-    
-    // Firmenadresse Tabelle (leer, da schon oben)
-    
-    // Abweichende Standortadresse (leer lassen)
-    
-    // Ansprechpartner Tabelle
+    // Ansprechpartner - nur die erste authorized person wenn vorhanden
     if (authorizedPersons && authorizedPersons.length > 0) {
       const person1 = authorizedPersons[0];
-      const contactY = height - 344;
       
-      // Vorname(n), Name, E-Mail, Telefon Zentrale
-      page1.drawText(person1.first_name, { x: 50, y: contactY, size: 8, font });
-      page1.drawText(person1.last_name, { x: 140, y: contactY, size: 8, font });
+      // Vorname, Name, E-Mail in der Tabelle (ca. Zeile 288-290)
+      page1.drawText(person1.first_name, { x: 50, y: height - 288, size: 8, font });
+      page1.drawText(person1.last_name, { x: 140, y: height - 288, size: 8, font });
       if (person1.email) {
-        page1.drawText(person1.email, { x: 230, y: contactY, size: 8, font });
+        page1.drawText(person1.email, { x: 230, y: height - 288, size: 8, font });
       }
-      if (person1.phone) {
-        page1.drawText(person1.phone, { x: 400, y: contactY, size: 8, font });
-      }
-    }
-    
-    // Zeile unter Ansprechpartner: Stadt, Geburtsdatum?, Ländercode
-    const personInfoY = height - 357;
-    if (authorizedPersons && authorizedPersons.length > 0) {
-      const person1 = authorizedPersons[0];
+      
+      // Zeile darunter: Stadt, Geburtsdatum?, Ländercode
       if (person1.private_city) {
-        page1.drawText(person1.private_city, { x: 37, y: personInfoY, size: 8, font });
+        page1.drawText(person1.private_city, { x: 37, y: height - 302, size: 8, font });
       }
       if (person1.date_of_birth) {
-        page1.drawText(new Date(person1.date_of_birth).toLocaleDateString('de-DE'), { x: 180, y: personInfoY, size: 8, font });
+        page1.drawText(new Date(person1.date_of_birth).toLocaleDateString('de-DE'), { x: 180, y: height - 302, size: 8, font });
       }
       if (person1.private_country) {
-        page1.drawText(person1.private_country, { x: 450, y: personInfoY, size: 8, font });
+        page1.drawText(person1.private_country, { x: 470, y: height - 302, size: 8, font });
       }
     }
     
-    // Gläubiger-ID Nr. (leer)
-    
-    // Lieferadresse
-    const deliveryY = height - 370;
-    page1.drawText(customer.street || '', { x: 310, y: deliveryY, size: 8, font });
-    const deliveryCityY = height - 382;
-    page1.drawText(customer.postal_code || '', { x: 310, y: deliveryCityY, size: 8, font });
-    page1.drawText(customer.city || '', { x: 380, y: deliveryCityY, size: 8, font });
+    // Lieferadresse (rechts neben Gläubiger-ID)
+    page1.drawText(customer.street || '', { x: 310, y: height - 315, size: 8, font });
+    page1.drawText(customer.postal_code || '', { x: 310, y: height - 327, size: 8, font });
+    page1.drawText(customer.city || '', { x: 370, y: height - 327, size: 8, font });
     
     // 2. Rechtliche Vertreter
-    // Checkbox: Kunde ist eine juristische Person (X setzen)
-    page1.drawText('X', { x: 37, y: height - 417, size: 10, font });
+    // Checkbox: Kunde ist eine juristische Person
+    page1.drawText('X', { x: 37, y: height - 362, size: 10, font });
     
-    // Vertretungsberechtigung (Einzelvertretung oder gemeinsam)
-    // Einzelvertretungsberechtigung checkbox
-    page1.drawText('X', { x: 37, y: height - 442, size: 10, font });
+    // Checkbox: Einzelvertretungsberechtigung  
+    page1.drawText('X', { x: 37, y: height - 387, size: 10, font });
     
     if (authorizedPersons && authorizedPersons.length > 0) {
       const person1 = authorizedPersons[0];
       
-      // Vertreter 1 Tabelle: Anrede, Vorname(n), Nachname
-      const rep1Y = height - 465;
-      // Anrede leer
-      page1.drawText(person1.first_name, { x: 100, y: rep1Y, size: 8, font });
-      page1.drawText(person1.last_name, { x: 240, y: rep1Y, size: 8, font });
+      // Vertreter 1: Vorname + Nachname in Tabelle
+      page1.drawText(person1.first_name, { x: 95, y: height - 410, size: 8, font });
+      page1.drawText(person1.last_name, { x: 240, y: height - 410, size: 8, font });
       
-      // Geburtsort, Geburtsdatum, Nationalität (darunter)
-      const rep1DetailsY = height - 477;
+      // Zeile darunter: Geburtsort, Geburtsdatum, Nationalität
       if (person1.place_of_birth) {
-        page1.drawText(person1.place_of_birth, { x: 80, y: rep1DetailsY, size: 8, font });
+        page1.drawText(person1.place_of_birth, { x: 80, y: height - 422, size: 8, font });
       }
       if (person1.date_of_birth) {
-        page1.drawText(new Date(person1.date_of_birth).toLocaleDateString('de-DE'), { x: 210, y: rep1DetailsY, size: 8, font });
+        page1.drawText(new Date(person1.date_of_birth).toLocaleDateString('de-DE'), { x: 210, y: height - 422, size: 8, font });
       }
       if (person1.nationality) {
-        page1.drawText(person1.nationality, { x: 370, y: rep1DetailsY, size: 8, font });
+        page1.drawText(person1.nationality, { x: 370, y: height - 422, size: 8, font });
       }
       
       // Privatadresse Tabelle
-      const rep1AddressY = height - 503;
       if (person1.private_street) {
-        page1.drawText(person1.private_street, { x: 120, y: rep1AddressY, size: 8, font });
+        page1.drawText(person1.private_street, { x: 120, y: height - 448, size: 8, font });
       }
       if (person1.private_postal_code) {
-        page1.drawText(person1.private_postal_code, { x: 280, y: rep1AddressY, size: 8, font });
+        page1.drawText(person1.private_postal_code, { x: 280, y: height - 448, size: 8, font });
       }
       if (person1.private_city) {
-        page1.drawText(person1.private_city, { x: 340, y: rep1AddressY, size: 8, font });
+        page1.drawText(person1.private_city, { x: 340, y: height - 448, size: 8, font });
       }
       if (person1.private_country) {
-        page1.drawText(person1.private_country, { x: 480, y: rep1AddressY, size: 8, font });
+        page1.drawText(person1.private_country, { x: 480, y: height - 448, size: 8, font });
       }
       
       // Ausweisdokument Tabelle
-      const rep1IdY = height - 528;
       if (person1.id_document_number) {
-        page1.drawText(person1.id_document_number, { x: 100, y: rep1IdY, size: 8, font });
+        page1.drawText(person1.id_document_number, { x: 100, y: height - 473, size: 8, font });
       }
       if (person1.id_document_issue_date) {
-        page1.drawText(new Date(person1.id_document_issue_date).toLocaleDateString('de-DE'), { x: 240, y: rep1IdY, size: 8, font });
+        page1.drawText(new Date(person1.id_document_issue_date).toLocaleDateString('de-DE'), { x: 240, y: height - 473, size: 8, font });
       }
       if (person1.id_document_issuing_authority) {
-        page1.drawText(person1.id_document_issuing_authority, { x: 380, y: rep1IdY, size: 8, font });
+        page1.drawText(person1.id_document_issuing_authority, { x: 380, y: height - 473, size: 8, font });
       }
       
-      // 1. Persönliche Identifizierung
-      // Checkboxen (Postident, Videoident, E-Mail, Telefonnummer) - leer lassen
-      
-      // E-Mail unter den Checkboxen
+      // E-Mail + Telefonnummer
       if (person1.email) {
-        page1.drawText(person1.email, { x: 140, y: height - 563, size: 8, font });
+        page1.drawText(person1.email, { x: 140, y: height - 508, size: 8, font });
       }
       if (person1.phone) {
-        page1.drawText(person1.phone, { x: 380, y: height - 563, size: 8, font });
+        page1.drawText(person1.phone, { x: 380, y: height - 508, size: 8, font });
       }
       
-      // "Ich handle in eigenem Namen..." Checkbox
-      page1.drawText('X', { x: 37, y: height - 595, size: 8, font });
+      // Checkbox "Ich handle in eigenem Namen..."
+      page1.drawText('X', { x: 37, y: height - 540, size: 8, font });
       
       // Zweite Person falls vorhanden
       if (authorizedPersons.length > 1) {
         const person2 = authorizedPersons[1];
         
-        const rep2Y = height - 658;
-        page1.drawText(person2.first_name, { x: 100, y: rep2Y, size: 8, font });
-        page1.drawText(person2.last_name, { x: 240, y: rep2Y, size: 8, font });
+        page1.drawText(person2.first_name, { x: 95, y: height - 603, size: 8, font });
+        page1.drawText(person2.last_name, { x: 240, y: height - 603, size: 8, font });
         
-        const rep2DetailsY = height - 670;
         if (person2.place_of_birth) {
-          page1.drawText(person2.place_of_birth, { x: 80, y: rep2DetailsY, size: 8, font });
+          page1.drawText(person2.place_of_birth, { x: 80, y: height - 615, size: 8, font });
         }
         if (person2.date_of_birth) {
-          page1.drawText(new Date(person2.date_of_birth).toLocaleDateString('de-DE'), { x: 210, y: rep2DetailsY, size: 8, font });
+          page1.drawText(new Date(person2.date_of_birth).toLocaleDateString('de-DE'), { x: 210, y: height - 615, size: 8, font });
         }
         if (person2.nationality) {
-          page1.drawText(person2.nationality, { x: 370, y: rep2DetailsY, size: 8, font });
+          page1.drawText(person2.nationality, { x: 370, y: height - 615, size: 8, font });
         }
         
-        const rep2AddressY = height - 696;
         if (person2.private_street) {
-          page1.drawText(person2.private_street, { x: 120, y: rep2AddressY, size: 8, font });
+          page1.drawText(person2.private_street, { x: 120, y: height - 641, size: 8, font });
         }
         if (person2.private_postal_code) {
-          page1.drawText(person2.private_postal_code, { x: 280, y: rep2AddressY, size: 8, font });
+          page1.drawText(person2.private_postal_code, { x: 280, y: height - 641, size: 8, font });
         }
         if (person2.private_city) {
-          page1.drawText(person2.private_city, { x: 340, y: rep2AddressY, size: 8, font });
+          page1.drawText(person2.private_city, { x: 340, y: height - 641, size: 8, font });
         }
         
-        const rep2IdY = height - 721;
         if (person2.id_document_number) {
-          page1.drawText(person2.id_document_number, { x: 100, y: rep2IdY, size: 8, font });
+          page1.drawText(person2.id_document_number, { x: 100, y: height - 666, size: 8, font });
         }
         
         if (person2.email) {
-          page1.drawText(person2.email, { x: 140, y: height - 756, size: 8, font });
+          page1.drawText(person2.email, { x: 140, y: height - 701, size: 8, font });
         }
         if (person2.phone) {
-          page1.drawText(person2.phone, { x: 380, y: height - 756, size: 8, font });
+          page1.drawText(person2.phone, { x: 380, y: height - 701, size: 8, font });
         }
       }
     }
