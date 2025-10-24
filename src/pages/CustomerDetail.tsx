@@ -187,12 +187,61 @@ const CustomerDetail = () => {
     }
   };
 
-  const generateContract = async () => {
+  const downloadContract = async () => {
     if (!customerId) return;
     
     try {
       setGeneratingContract(true);
-      toast.info("Vertrag wird generiert...");
+
+      // Prüfe ob bereits ein Vertrag existiert
+      const { data: existingDocs } = await supabase
+        .from("documents")
+        .select("*")
+        .eq("customer_id", customerId)
+        .eq("document_type", "other")
+        .ilike("file_name", "Vertrag_%")
+        .order("uploaded_at", { ascending: false })
+        .limit(1);
+
+      if (existingDocs && existingDocs.length > 0) {
+        // Bestehenden Vertrag herunterladen
+        const contract = existingDocs[0];
+        await downloadDocument(contract.file_path, contract.file_name);
+        toast.success("Vertrag heruntergeladen");
+      } else {
+        // Neuen Vertrag generieren
+        toast.info("Vertrag wird generiert...");
+        
+        const { data, error } = await supabase.functions.invoke('generate-contract', {
+          body: { customerId }
+        });
+
+        if (error) throw error;
+
+        toast.success("Vertrag wurde erfolgreich erstellt");
+        
+        // Download the generated contract
+        if (data.filePath && data.fileName) {
+          await downloadDocument(data.filePath, data.fileName);
+        }
+        
+        // Reload documents
+        await loadCustomerData();
+      }
+    } catch (error: any) {
+      console.error("Error with contract:", error);
+      toast.error("Fehler beim Vertrag");
+    } finally {
+      setGeneratingContract(false);
+    }
+  };
+
+  const regenerateContract = async () => {
+    if (!customerId) return;
+    
+    try {
+      setGeneratingContract(true);
+      toast.info("Vertrag wird neu generiert...");
 
       const { data, error } = await supabase.functions.invoke('generate-contract', {
         body: { customerId }
@@ -200,18 +249,16 @@ const CustomerDetail = () => {
 
       if (error) throw error;
 
-      toast.success("Vertrag wurde erfolgreich erstellt");
+      toast.success("Vertrag wurde neu generiert");
       
-      // Download the generated contract
       if (data.filePath && data.fileName) {
         await downloadDocument(data.filePath, data.fileName);
       }
       
-      // Reload documents to show the new contract
       await loadCustomerData();
     } catch (error: any) {
-      console.error("Error generating contract:", error);
-      toast.error("Fehler beim Generieren des Vertrags");
+      console.error("Error regenerating contract:", error);
+      toast.error("Fehler beim Neugenerieren des Vertrags");
     } finally {
       setGeneratingContract(false);
     }
@@ -313,12 +360,22 @@ const CustomerDetail = () => {
               {customer.status === 'completed' && (
                 <>
                   <Button
-                    onClick={generateContract}
+                    onClick={downloadContract}
                     disabled={generatingContract}
                     variant="default"
                   >
+                    <Download className="h-4 w-4 mr-2" />
+                    {generatingContract ? "Lädt..." : "Vertrag herunterladen"}
+                  </Button>
+                  
+                  <Button
+                    onClick={regenerateContract}
+                    disabled={generatingContract}
+                    variant="outline"
+                    size="sm"
+                  >
                     <FileText className="h-4 w-4 mr-2" />
-                    {generatingContract ? "Generiere..." : "Vertrag herunterladen"}
+                    {generatingContract ? "Generiert..." : "Neu generieren"}
                   </Button>
                   
                   {/* Temporärer Upload Button */}

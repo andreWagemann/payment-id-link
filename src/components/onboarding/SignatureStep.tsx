@@ -122,6 +122,17 @@ const SignatureStep = ({ customerId, onComplete, onBack }: SignatureStepProps) =
 
       if (updateError) throw updateError;
 
+      // Vertrag automatisch generieren
+      toast.info("Vertrag wird generiert...");
+      const { error: contractError } = await supabase.functions.invoke('generate-contract', {
+        body: { customerId }
+      });
+
+      if (contractError) {
+        console.error("Fehler beim Generieren des Vertrags:", contractError);
+        toast.warning("Onboarding abgeschlossen, Vertrag konnte nicht generiert werden");
+      }
+
       toast.success("Onboarding erfolgreich abgeschlossen!");
       onComplete();
     } catch (error: any) {
