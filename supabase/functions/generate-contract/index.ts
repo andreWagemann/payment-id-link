@@ -72,140 +72,263 @@ Deno.serve(async (req) => {
 
     console.log('Loaded customer data, creating PDF...');
 
-    // Lade PDF-Vorlage
-    const templateResponse = await fetch(`${supabaseUrl}/storage/v1/object/public/kyc-documents/contract-template.pdf`);
-    if (!templateResponse.ok) {
-      // Falls nicht im Storage, lade von public folder (für Entwicklung)
-      const publicUrl = `${supabaseUrl.replace('.supabase.co', '')}/contract-template.pdf`;
-      console.log('Template not in storage, trying public URL');
-    }
-    
-    const templateBytes = await templateResponse.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(templateBytes);
-    const pages = pdfDoc.getPages();
+    // Erstelle neues PDF-Dokument von Grund auf
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595, 842]); // A4 Format
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const fontSize = 10;
+    const titleSize = 16;
+    const headingSize = 12;
 
-    // Seite 1 - Kontaktinformationen
-    const page1 = pages[0];
+    let yPos = 800;
+
+    // Titel
+    page.drawText('Servicevereinbarung Terminal', {
+      x: 50,
+      y: yPos,
+      size: titleSize,
+      font: fontBold,
+    });
+    page.drawText('Beyond inkl. Kartenakzeptanz stationärer Handel by RS2', {
+      x: 50,
+      y: yPos - 20,
+      size: 12,
+      font,
+    });
+
+    yPos -= 60;
+
+    // Kundendaten
+    page.drawText('1. Kontaktinformationen', {
+      x: 50,
+      y: yPos,
+      size: headingSize,
+      font: fontBold,
+    });
+    yPos -= 25;
+
+    page.drawText(`Firmenname: ${customer.company_name}`, { x: 50, y: yPos, size: fontSize, font });
+    yPos -= 15;
+    page.drawText(`Rechtsform: ${customer.legal_form.toUpperCase()}`, { x: 50, y: yPos, size: fontSize, font });
+    yPos -= 15;
     
-    // Kundennummer, Leistungsbeginn, etc.
-    page1.drawText(customerId.substring(0, 8), { x: 100, y: 750, size: fontSize, font });
-    page1.drawText(new Date().toLocaleDateString('de-DE'), { x: 200, y: 750, size: fontSize, font });
-    
-    // Kundenname / Handelsname
-    page1.drawText(customer.company_name, { x: 100, y: 680, size: fontSize, font });
-    
-    // Rechtsform
-    page1.drawText(customer.legal_form.toUpperCase(), { x: 400, y: 680, size: fontSize, font });
-    
-    // USt-IdNr.
     if (customer.vat_id) {
-      page1.drawText(customer.vat_id, { x: 200, y: 665, size: fontSize, font });
+      page.drawText(`USt-IdNr.: ${customer.vat_id}`, { x: 50, y: yPos, size: fontSize, font });
+      yPos -= 15;
     }
     
-    // HR-Nummer
     if (customer.commercial_register) {
-      page1.drawText(customer.commercial_register, { x: 350, y: 665, size: fontSize, font });
+      page.drawText(`Handelsregister: ${customer.commercial_register}`, { x: 50, y: yPos, size: fontSize, font });
+      yPos -= 15;
     }
-    
-    // Firmenadresse
-    page1.drawText(customer.street || '', { x: 100, y: 640, size: fontSize, font });
-    page1.drawText(customer.postal_code || '', { x: 100, y: 625, size: fontSize, font });
-    page1.drawText(customer.city || '', { x: 180, y: 625, size: fontSize, font });
-    page1.drawText(customer.country || 'DE', { x: 100, y: 610, size: fontSize, font });
+
+    page.drawText(`Adresse: ${customer.street || ''}`, { x: 50, y: yPos, size: fontSize, font });
+    yPos -= 15;
+    page.drawText(`${customer.postal_code || ''} ${customer.city || ''}, ${customer.country || 'DE'}`, { 
+      x: 50, y: yPos, size: fontSize, font 
+    });
+    yPos -= 30;
 
     // Vertretungsberechtigte Personen
     if (authorizedPersons && authorizedPersons.length > 0) {
-      const person1 = authorizedPersons[0];
-      let yPos = 520;
-      
-      page1.drawText(`${person1.first_name} ${person1.last_name}`, { x: 150, y: yPos, size: fontSize, font });
-      page1.drawText(person1.place_of_birth || '', { x: 100, y: yPos - 15, size: fontSize, font });
-      page1.drawText(person1.date_of_birth ? new Date(person1.date_of_birth).toLocaleDateString('de-DE') : '', { x: 200, y: yPos - 15, size: fontSize, font });
-      page1.drawText(person1.nationality || '', { x: 350, y: yPos - 15, size: fontSize, font });
-      
-      // Privatadresse
-      page1.drawText(person1.private_street || '', { x: 100, y: yPos - 45, size: fontSize, font });
-      page1.drawText(person1.private_postal_code || '', { x: 250, y: yPos - 45, size: fontSize, font });
-      page1.drawText(person1.private_city || '', { x: 320, y: yPos - 45, size: fontSize, font });
-      
-      // Ausweisdaten
-      page1.drawText(person1.id_document_number || '', { x: 200, y: yPos - 60, size: fontSize, font });
-      page1.drawText(person1.id_document_issue_date ? new Date(person1.id_document_issue_date).toLocaleDateString('de-DE') : '', { x: 300, y: yPos - 60, size: fontSize, font });
-      page1.drawText(person1.id_document_issuing_authority || '', { x: 400, y: yPos - 60, size: fontSize, font });
-      
-      page1.drawText(person1.email || '', { x: 100, y: yPos - 85, size: fontSize, font });
-      
-      // Zweite Person falls vorhanden
-      if (authorizedPersons.length > 1) {
-        const person2 = authorizedPersons[1];
-        yPos = 350;
+      page.drawText('2. Vertretungsberechtigte Personen', {
+        x: 50,
+        y: yPos,
+        size: headingSize,
+        font: fontBold,
+      });
+      yPos -= 25;
+
+      authorizedPersons.forEach((person, index) => {
+        if (yPos < 100) {
+          // Neue Seite wenn nicht genug Platz
+          const newPage = pdfDoc.addPage([595, 842]);
+          yPos = 800;
+        }
+
+        page.drawText(`Person ${index + 1}: ${person.first_name} ${person.last_name}`, {
+          x: 50, y: yPos, size: fontSize, font: fontBold
+        });
+        yPos -= 15;
         
-        page1.drawText(`${person2.first_name} ${person2.last_name}`, { x: 150, y: yPos, size: fontSize, font });
-        page1.drawText(person2.place_of_birth || '', { x: 100, y: yPos - 15, size: fontSize, font });
-        page1.drawText(person2.date_of_birth ? new Date(person2.date_of_birth).toLocaleDateString('de-DE') : '', { x: 200, y: yPos - 15, size: fontSize, font });
-        page1.drawText(person2.nationality || '', { x: 350, y: yPos - 15, size: fontSize, font });
-        page1.drawText(person2.private_street || '', { x: 100, y: yPos - 45, size: fontSize, font });
-        page1.drawText(person2.email || '', { x: 100, y: yPos - 85, size: fontSize, font });
-      }
+        if (person.date_of_birth) {
+          page.drawText(`Geburtsdatum: ${new Date(person.date_of_birth).toLocaleDateString('de-DE')}`, {
+            x: 70, y: yPos, size: fontSize, font
+          });
+          yPos -= 15;
+        }
+        
+        if (person.place_of_birth) {
+          page.drawText(`Geburtsort: ${person.place_of_birth}`, { x: 70, y: yPos, size: fontSize, font });
+          yPos -= 15;
+        }
+        
+        if (person.nationality) {
+          page.drawText(`Nationalität: ${person.nationality}`, { x: 70, y: yPos, size: fontSize, font });
+          yPos -= 15;
+        }
+        
+        if (person.email) {
+          page.drawText(`E-Mail: ${person.email}`, { x: 70, y: yPos, size: fontSize, font });
+          yPos -= 15;
+        }
+
+        page.drawText(`Privatadresse: ${person.private_street || ''}`, { x: 70, y: yPos, size: fontSize, font });
+        yPos -= 15;
+        page.drawText(`${person.private_postal_code || ''} ${person.private_city || ''}, ${person.private_country || ''}`, {
+          x: 70, y: yPos, size: fontSize, font
+        });
+        yPos -= 25;
+      });
     }
 
-    // Seite 2 - Wirtschaftlich Berechtigte
-    const page2 = pages[1];
+    // Wirtschaftlich Berechtigte
     if (beneficialOwners && beneficialOwners.length > 0) {
-      let yPos = 600;
+      if (yPos < 150) {
+        const newPage = pdfDoc.addPage([595, 842]);
+        yPos = 800;
+      }
+
+      page.drawText('3. Wirtschaftlich Berechtigte', {
+        x: 50,
+        y: yPos,
+        size: headingSize,
+        font: fontBold,
+      });
+      yPos -= 25;
+
       beneficialOwners.forEach((owner, index) => {
-        if (index < 3) {
-          page2.drawText(`${owner.first_name} ${owner.last_name}`, { x: 150, y: yPos - (index * 30), size: fontSize, font });
-          page2.drawText(owner.date_of_birth ? new Date(owner.date_of_birth).toLocaleDateString('de-DE') : '', { x: 280, y: yPos - (index * 30), size: fontSize, font });
-          page2.drawText(owner.nationality || '', { x: 380, y: yPos - (index * 30), size: fontSize, font });
-          page2.drawText(`${owner.ownership_percentage}%`, { x: 480, y: yPos - (index * 30), size: fontSize, font });
-        }
+        page.drawText(
+          `${owner.first_name} ${owner.last_name} - ${owner.ownership_percentage}% Beteiligung`,
+          { x: 50, y: yPos, size: fontSize, font }
+        );
+        yPos -= 15;
       });
+      yPos -= 20;
     }
 
-    // Seite 3 - Produkte und Konditionen
-    const page3 = pages[2];
-    if (products && products.length > 0) {
-      let yPos = 650;
-      products.forEach((product, index) => {
-        if (index < 5) {
-          page3.drawText(product.product_type, { x: 100, y: yPos - (index * 25), size: fontSize, font });
-          page3.drawText(product.quantity.toString(), { x: 200, y: yPos - (index * 25), size: fontSize, font });
-          if (product.monthly_rent) {
-            page3.drawText(product.monthly_rent.toString(), { x: 270, y: yPos - (index * 25), size: fontSize, font });
-          }
-          if (product.setup_fee) {
-            page3.drawText(product.setup_fee.toString(), { x: 360, y: yPos - (index * 25), size: fontSize, font });
-          }
-        }
-      });
-    }
-
-    // Seite 4 - SEPA-Mandat und Unterschrift
-    const page4 = pages[3];
+    // SEPA-Mandat
     if (sepaMandate) {
-      page4.drawText(sepaMandate.account_holder, { x: 100, y: 650, size: fontSize, font });
-      page4.drawText(sepaMandate.iban, { x: 300, y: 650, size: fontSize, font });
-      page4.drawText(sepaMandate.bank_name || '', { x: 100, y: 635, size: fontSize, font });
-      page4.drawText(sepaMandate.bic || '', { x: 300, y: 635, size: fontSize, font });
+      if (yPos < 150) {
+        const newPage = pdfDoc.addPage([595, 842]);
+        yPos = 800;
+      }
+
+      page.drawText('4. SEPA-Lastschriftmandat', {
+        x: 50,
+        y: yPos,
+        size: headingSize,
+        font: fontBold,
+      });
+      yPos -= 25;
+
+      page.drawText(`Kontoinhaber: ${sepaMandate.account_holder}`, { x: 50, y: yPos, size: fontSize, font });
+      yPos -= 15;
+      page.drawText(`IBAN: ${sepaMandate.iban}`, { x: 50, y: yPos, size: fontSize, font });
+      yPos -= 15;
       
-      // Datum Lastschriftmandat
-      page4.drawText(new Date().toLocaleDateString('de-DE'), { x: 100, y: 580, size: fontSize, font });
-      page4.drawText(sepaMandate.mandate_reference, { x: 300, y: 520, size: fontSize, font });
+      if (sepaMandate.bic) {
+        page.drawText(`BIC: ${sepaMandate.bic}`, { x: 50, y: yPos, size: fontSize, font });
+        yPos -= 15;
+      }
+      
+      if (sepaMandate.bank_name) {
+        page.drawText(`Bank: ${sepaMandate.bank_name}`, { x: 50, y: yPos, size: fontSize, font });
+        yPos -= 15;
+      }
+      
+      page.drawText(`Mandatsreferenz: ${sepaMandate.mandate_reference}`, { x: 50, y: yPos, size: fontSize, font });
+      yPos -= 15;
+      page.drawText(`Mandatsdatum: ${new Date(sepaMandate.mandate_date).toLocaleDateString('de-DE')}`, { 
+        x: 50, y: yPos, size: fontSize, font 
+      });
+      yPos -= 15;
+      
+      if (sepaMandate.accepted) {
+        page.drawText(`Akzeptiert am: ${new Date(sepaMandate.accepted_at!).toLocaleDateString('de-DE')}`, {
+          x: 50, y: yPos, size: fontSize, font
+        });
+        yPos -= 15;
+      }
+      yPos -= 20;
+    }
+
+    // Produkte
+    if (products && products.length > 0) {
+      if (yPos < 150) {
+        const newPage = pdfDoc.addPage([595, 842]);
+        yPos = 800;
+      }
+
+      page.drawText('5. Produkte und Konditionen', {
+        x: 50,
+        y: yPos,
+        size: headingSize,
+        font: fontBold,
+      });
+      yPos -= 25;
+
+      products.forEach((product) => {
+        page.drawText(
+          `${product.product_type} - Anzahl: ${product.quantity}`,
+          { x: 50, y: yPos, size: fontSize, font }
+        );
+        yPos -= 15;
+        
+        if (product.monthly_rent) {
+          page.drawText(`Monatliche Miete: ${product.monthly_rent} €`, { x: 70, y: yPos, size: fontSize, font });
+          yPos -= 15;
+        }
+        
+        if (product.setup_fee) {
+          page.drawText(`Einrichtungsgebühr: ${product.setup_fee} €`, { x: 70, y: yPos, size: fontSize, font });
+          yPos -= 15;
+        }
+        yPos -= 10;
+      });
+      yPos -= 20;
     }
 
     // Unterschrift
     if (signature) {
-      page4.drawText(new Date(signature.timestamp).toLocaleDateString('de-DE'), { x: 100, y: 310, size: fontSize, font });
-      if (authorizedPersons && authorizedPersons.length > 0) {
-        page4.drawText(`${authorizedPersons[0].first_name} ${authorizedPersons[0].last_name}`, { x: 100, y: 295, size: fontSize, font });
+      if (yPos < 100) {
+        const newPage = pdfDoc.addPage([595, 842]);
+        yPos = 800;
       }
+
+      page.drawText('6. Unterschrift', {
+        x: 50,
+        y: yPos,
+        size: headingSize,
+        font: fontBold,
+      });
+      yPos -= 25;
+
+      page.drawText(`Elektronisch signiert am: ${new Date(signature.timestamp).toLocaleDateString('de-DE')}`, {
+        x: 50, y: yPos, size: fontSize, font
+      });
+      yPos -= 15;
       
-      // Hinweis auf digitale Unterschrift
-      page4.drawText('Elektronisch signiert', { x: 100, y: 270, size: 8, font, color: rgb(0.5, 0.5, 0.5) });
+      page.drawText(`AGB akzeptiert: ${signature.terms_accepted ? 'Ja' : 'Nein'}`, {
+        x: 50, y: yPos, size: fontSize, font
+      });
+      yPos -= 15;
+      
+      page.drawText(`Datenschutz akzeptiert: ${signature.privacy_accepted ? 'Ja' : 'Nein'}`, {
+        x: 50, y: yPos, size: fontSize, font
+      });
     }
+
+    // Footer
+    const lastPage = pdfDoc.getPages()[pdfDoc.getPageCount() - 1];
+    lastPage.drawText(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, {
+      x: 50,
+      y: 30,
+      size: 8,
+      font,
+      color: rgb(0.5, 0.5, 0.5),
+    });
 
     // Speichere PDF
     const pdfBytes = await pdfDoc.save();
