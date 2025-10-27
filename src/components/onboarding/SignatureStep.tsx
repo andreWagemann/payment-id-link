@@ -133,6 +133,26 @@ const SignatureStep = ({ customerId, onComplete, onBack }: SignatureStepProps) =
         toast.warning("Onboarding abgeschlossen, Vertrag konnte nicht generiert werden");
       }
 
+      // Send notification email for signature
+      try {
+        const { data: customer } = await supabase
+          .from("customers")
+          .select("company_name")
+          .eq("id", customerId)
+          .single();
+
+        await supabase.functions.invoke('send-notification-email', {
+          body: {
+            type: 'signature',
+            companyName: customer?.company_name || 'Unbekannt',
+            customerId
+          }
+        });
+      } catch (emailError) {
+        console.error("Failed to send notification email:", emailError);
+        // Don't throw - email notification should not block the main flow
+      }
+
       toast.success("Onboarding erfolgreich abgeschlossen!");
       onComplete();
     } catch (error: any) {

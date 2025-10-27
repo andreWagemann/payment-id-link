@@ -355,8 +355,24 @@ const NewCustomer = () => {
 
         if (error) throw error;
         currentCustomerId = customer.id;
-        setMagicLink(`${window.location.origin}/onboarding/${token}`);
+        const generatedMagicLink = `${window.location.origin}/onboarding/${token}`;
+        setMagicLink(generatedMagicLink);
         setShowMagicLink(true);
+
+        // Send notification email
+        try {
+          await supabase.functions.invoke('send-notification-email', {
+            body: {
+              type: 'new_onboarding',
+              companyName: formData.company_name,
+              customerId: customer.id,
+              magicLink: generatedMagicLink
+            }
+          });
+        } catch (emailError) {
+          console.error("Failed to send notification email:", emailError);
+          // Don't throw - email notification should not block the main flow
+        }
       }
 
       // Handle authorized persons - completely rewritten logic
