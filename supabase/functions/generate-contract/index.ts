@@ -94,33 +94,33 @@ Deno.serve(async (req) => {
 
     // Firmenadresse: Straße, PLZ, Stadt, Ländercode (alle auf einer Zeile mit mehr Abstand)
     if (customer.street) {
-      page1.drawText(customer.street, { x: 50, y: height - 256, size: 9, font });
+      page1.drawText(customer.street, { x: 50, y: height - 262, size: 9, font });
     }
     if (customer.postal_code) {
-      page1.drawText(customer.postal_code, { x: 260, y: height - 256, size: 9, font });
+      page1.drawText(customer.postal_code, { x: 250, y: height - 262, size: 9, font });
     }
     if (customer.city) {
-      page1.drawText(customer.city, { x: 375, y: height - 256, size: 9, font });
+      page1.drawText(customer.city, { x: 365, y: height - 262, size: 9, font });
     }
-    page1.drawText(customer.country || "DE", { x: 540, y: height - 256, size: 9, font });
+    page1.drawText(customer.country || "DE", { x: 520, y: height - 262, size: 9, font });
 
     // Ansprechpartner - erste authorized person
     if (authorizedPersons && authorizedPersons.length > 0) {
       const person1 = authorizedPersons[0];
 
       // Vorname, Name, E-Mail
-      page1.drawText(person1.first_name, { x: 50, y: height - 347, size: 8, font });
-      page1.drawText(person1.last_name, { x: 175, y: height - 347, size: 8, font });
+      page1.drawText(person1.first_name, { x: 50, y: height - 344, size: 8, font });
+      page1.drawText(person1.last_name, { x: 170, y: height - 344, size: 8, font });
       if (person1.email) {
         page1.drawText(person1.email, { x: 360, y: height - 307, size: 8, font });
       }
     }
 
     // 2. Rechtliche Vertreter - Checkbox: Kunde ist eine juristische Person
-    page1.drawText("X", { x: 320, y: height - 362, size: 9, font });
+    page1.drawText("X", { x: 318, y: height - 385, size: 9, font });
 
     // Checkbox: Einzelvertretungsberechtigung
-    page1.drawText("X", { x: 48, y: height - 380, size: 9, font });
+    page1.drawText("X", { x: 50, y: height - 395, size: 9, font });
 
     if (authorizedPersons && authorizedPersons.length > 0) {
       const person1 = authorizedPersons[0];
