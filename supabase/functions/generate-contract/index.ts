@@ -80,6 +80,10 @@ Deno.serve(async (req) => {
     const templateBytes = await templateData.arrayBuffer();
     const pdfDoc = await PDFDocument.load(templateBytes);
 
+    // Flatten form fields so text appears on top
+    const form = pdfDoc.getForm();
+    form.flatten();
+
     const pages = pdfDoc.getPages();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontSize = 9;
