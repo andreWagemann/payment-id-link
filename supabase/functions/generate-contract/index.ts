@@ -94,47 +94,47 @@ Deno.serve(async (req) => {
 
     // Firmenadresse: Straße, PLZ, Stadt, Ländercode (alle auf einer Zeile mit mehr Abstand)
     if (customer.street) {
-      page1.drawText(customer.street, { x: 50, y: height - 262, size: 9, font });
+      page1.drawText(customer.street, { x: 50, y: height - 256, size: 9, font });
     }
     if (customer.postal_code) {
-      page1.drawText(customer.postal_code, { x: 250, y: height - 262, size: 9, font });
+      page1.drawText(customer.postal_code, { x: 250, y: height - 256, size: 9, font });
     }
     if (customer.city) {
-      page1.drawText(customer.city, { x: 365, y: height - 262, size: 9, font });
+      page1.drawText(customer.city, { x: 375, y: height - 256, size: 9, font });
     }
-    page1.drawText(customer.country || "DE", { x: 520, y: height - 262, size: 9, font });
+    page1.drawText(customer.country || "DE", { x: 540, y: height - 256, size: 9, font });
 
     // Ansprechpartner - erste authorized person
     if (authorizedPersons && authorizedPersons.length > 0) {
       const person1 = authorizedPersons[0];
 
       // Vorname, Name, E-Mail
-      page1.drawText(person1.first_name, { x: 50, y: height - 344, size: 8, font });
-      page1.drawText(person1.last_name, { x: 170, y: height - 344, size: 8, font });
+      page1.drawText(person1.first_name, { x: 50, y: height - 347, size: 8, font });
+      page1.drawText(person1.last_name, { x: 175, y: height - 347, size: 8, font });
       if (person1.email) {
         page1.drawText(person1.email, { x: 360, y: height - 307, size: 8, font });
       }
     }
 
     // 2. Rechtliche Vertreter - Checkbox: Kunde ist eine juristische Person
-    page1.drawText("X", { x: 318, y: height - 385, size: 9, font });
+    page1.drawText("X", { x: 320, y: height - 362, size: 9, font });
 
     // Checkbox: Einzelvertretungsberechtigung
-    page1.drawText("X", { x: 50, y: height - 395, size: 9, font });
+    page1.drawText("X", { x: 48, y: height - 380, size: 9, font });
 
     if (authorizedPersons && authorizedPersons.length > 0) {
       const person1 = authorizedPersons[0];
 
       // 1. rechtlicher Vertreter - Anrede Herr
-      page1.drawText("Herr", { x: 80, y: height - 404, size: 8, font });
+      page1.drawText("Herr", { x: 90, y: height - 420, size: 8, font });
 
       // Vorname + Nachname
-      page1.drawText(person1.first_name, { x: 155, y: height - 404, size: 8, font });
-      page1.drawText(person1.last_name, { x: 310, y: height - 404, size: 8, font });
+      page1.drawText(person1.first_name, { x: 157, y: height - 420, size: 8, font });
+      page1.drawText(person1.last_name, { x: 312, y: height - 420, size: 8, font });
 
       // Geburtsort, Geburtsdatum, Nationalität
       if (person1.place_of_birth) {
-        page1.drawText(person1.place_of_birth, { x: 80, y: height - 419, size: 8, font });
+        page1.drawText(person1.place_of_birth, { x: 90, y: height - 430, size: 8, font });
       }
       if (person1.date_of_birth) {
         page1.drawText(new Date(person1.date_of_birth).toLocaleDateString("de-DE"), {
@@ -150,16 +150,16 @@ Deno.serve(async (req) => {
 
       // Privatadresse: Straße, PLZ, Stadt, Ländercode
       if (person1.private_street) {
-        page1.drawText(person1.private_street, { x: 150, y: height - 434, size: 8, font });
+        page1.drawText(person1.private_street, { x: 50, y: height - 454, size: 8, font });
       }
       if (person1.private_postal_code) {
-        page1.drawText(person1.private_postal_code, { x: 270, y: height - 434, size: 8, font });
+        page1.drawText(person1.private_postal_code, { x: 270, y: height - 454, size: 8, font });
       }
       if (person1.private_city) {
-        page1.drawText(person1.private_city, { x: 335, y: height - 434, size: 8, font });
+        page1.drawText(person1.private_city, { x: 345, y: height - 454, size: 8, font });
       }
       if (person1.private_country) {
-        page1.drawText(person1.private_country, { x: 500, y: height - 434, size: 8, font });
+        page1.drawText(person1.private_country, { x: 510, y: height - 454, size: 8, font });
       }
 
       // Ausweisdokument
