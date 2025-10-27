@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
       page1.drawText(customer.street, { x: 50, y: height - 256, size: 9, font });
     }
     if (customer.postal_code) {
-      page1.drawText(customer.postal_code, { x: 250, y: height - 256, size: 9, font });
+      page1.drawText(customer.postal_code, { x: 260, y: height - 256, size: 9, font });
     }
     if (customer.city) {
       page1.drawText(customer.city, { x: 375, y: height - 256, size: 9, font });
