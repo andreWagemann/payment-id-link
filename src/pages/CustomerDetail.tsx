@@ -270,6 +270,27 @@ const CustomerDetail = () => {
     }
   };
 
+  const cleanupOldContracts = async () => {
+    if (!customerId) return;
+    
+    try {
+      toast.info("Alte Verträge werden gelöscht...");
+
+      const { data, error } = await supabase.functions.invoke('cleanup-old-contracts', {
+        body: { customerId }
+      });
+
+      if (error) throw error;
+
+      toast.success(data.message || "Alte Verträge wurden gelöscht");
+      
+      await loadCustomerData();
+    } catch (error: any) {
+      console.error("Error cleaning up contracts:", error);
+      toast.error("Fehler beim Löschen alter Verträge");
+    }
+  };
+
   const handleTemplateUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -583,7 +604,7 @@ const CustomerDetail = () => {
                       Übersicht aller generierten Verträge
                     </CardDescription>
                   </div>
-                  {customer.status === 'completed' && (
+                   {customer.status === 'completed' && (
                     <div className="flex items-center gap-2">
                       <Button
                         onClick={downloadContract}
@@ -603,6 +624,16 @@ const CustomerDetail = () => {
                         <FileText className="h-4 w-4 mr-2" />
                         {generatingContract ? "Generiert..." : "Neu generieren"}
                       </Button>
+
+                      {contracts.length > 1 && (
+                        <Button
+                          onClick={cleanupOldContracts}
+                          variant="destructive"
+                          size="sm"
+                        >
+                          Alte löschen
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

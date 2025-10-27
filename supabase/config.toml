@@ -2,3 +2,6 @@ project_id = "bgkafqfzqvurdgctckqn"
 
 [functions.generate-contract]
 verify_jwt = false
+
+[functions.cleanup-old-contracts]
+verify_jwt = false
