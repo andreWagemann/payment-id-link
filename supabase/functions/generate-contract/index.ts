@@ -117,20 +117,20 @@ Deno.serve(async (req) => {
     }
 
     // 2. Rechtliche Vertreter - Checkbox: Kunde ist eine juristische Person
-    page1.drawText("X", { x: 115, y: height - 380, size: 9, font });
+    page1.drawText("X", { x: 115, y: height - 390, size: 9, font });
 
     // Checkbox: Einzelvertretungsberechtigung
-    page1.drawText("X", { x: 48, y: height - 380, size: 9, font });
+    page1.drawText("X", { x: 48, y: height - 390, size: 9, font });
 
     if (authorizedPersons && authorizedPersons.length > 0) {
       const person1 = authorizedPersons[0];
 
       // 1. rechtlicher Vertreter - Anrede Herr
-      page1.drawText("Herr", { x: 100, y: height - 422, size: 8, font });
+      page1.drawText("Herr", { x: 100, y: height - 427, size: 8, font });
 
       // Vorname + Nachname
-      page1.drawText(person1.first_name, { x: 200, y: height - 422, size: 8, font });
-      page1.drawText(person1.last_name, { x: 155, y: height - 422, size: 8, font });
+      page1.drawText(person1.first_name, { x: 250, y: height - 427, size: 8, font });
+      page1.drawText(person1.last_name, { x: 175, y: height - 427, size: 8, font });
 
       // Geburtsort, Geburtsdatum, Nationalität
       if (person1.place_of_birth) {
