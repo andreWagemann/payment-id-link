@@ -198,55 +198,55 @@ Deno.serve(async (req) => {
         const person2 = authorizedPersons[1];
 
         // Anrede Herr
-        page1.drawText("Herr", { x: 80, y: height - 611, size: 8, font });
+        page1.drawText("Herr", { x: 80, y: height - 651, size: 8, font });
 
         // Vorname + Nachname
-        page1.drawText(person2.first_name, { x: 155, y: height - 611, size: 8, font });
-        page1.drawText(person2.last_name, { x: 310, y: height - 611, size: 8, font });
+        page1.drawText(person2.first_name, { x: 155, y: height - 651, size: 8, font });
+        page1.drawText(person2.last_name, { x: 310, y: height - 651, size: 8, font });
 
         // Geburtsort, Geburtsdatum, Nationalität
         if (person2.place_of_birth) {
-          page1.drawText(person2.place_of_birth, { x: 100, y: height - 626, size: 8, font });
+          page1.drawText(person2.place_of_birth, { x: 100, y: height - 666, size: 8, font });
         }
         if (person2.date_of_birth) {
           page1.drawText(new Date(person2.date_of_birth).toLocaleDateString("de-DE"), {
             x: 280,
-            y: height - 626,
+            y: height - 666,
             size: 8,
             font,
           });
         }
         if (person2.nationality) {
-          page1.drawText(person2.nationality, { x: 405, y: height - 626, size: 8, font });
+          page1.drawText(person2.nationality, { x: 405, y: height - 666, size: 8, font });
         }
 
         // Privatadresse: Straße, PLZ, Stadt, Ländercode
         if (person2.private_street) {
-          page1.drawText(person2.private_street, { x: 150, y: height - 641, size: 8, font });
+          page1.drawText(person2.private_street, { x: 150, y: height - 681, size: 8, font });
         }
         if (person2.private_postal_code) {
-          page1.drawText(person2.private_postal_code, { x: 270, y: height - 641, size: 8, font });
+          page1.drawText(person2.private_postal_code, { x: 270, y: height - 681, size: 8, font });
         }
         if (person2.private_city) {
-          page1.drawText(person2.private_city, { x: 335, y: height - 641, size: 8, font });
+          page1.drawText(person2.private_city, { x: 335, y: height - 681, size: 8, font });
         }
         if (person2.private_country) {
-          page1.drawText(person2.private_country, { x: 500, y: height - 641, size: 8, font });
+          page1.drawText(person2.private_country, { x: 500, y: height - 681, size: 8, font });
         }
 
         // Ausweisdokument
-        page1.drawText("Ausweis", { x: 83, y: height - 665, size: 8, font });
+        page1.drawText("Ausweis", { x: 83, y: height - 705, size: 8, font });
 
         // Ausweisnummer
         if (person2.id_document_number) {
-          page1.drawText(person2.id_document_number, { x: 178, y: height - 665, size: 8, font });
+          page1.drawText(person2.id_document_number, { x: 178, y: height - 705, size: 8, font });
         }
 
         // Datum der Ausstellung
         if (person2.id_document_issue_date) {
           page1.drawText(new Date(person2.id_document_issue_date).toLocaleDateString("de-DE"), {
             x: 313,
-            y: height - 665,
+            y: height - 705,
             size: 8,
             font,
           });
@@ -254,12 +254,12 @@ Deno.serve(async (req) => {
 
         // Ausstellende Behörde
         if (person2.id_document_issuing_authority) {
-          page1.drawText(person2.id_document_issuing_authority, { x: 443, y: height - 665, size: 8, font });
+          page1.drawText(person2.id_document_issuing_authority, { x: 443, y: height - 705, size: 8, font });
         }
 
         // E-Mail
         if (person2.email) {
-          page1.drawText(person2.email, { x: 180, y: height - 689, size: 8, font });
+          page1.drawText(person2.email, { x: 180, y: height - 729, size: 8, font });
         }
       }
     }
