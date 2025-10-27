@@ -53,7 +53,7 @@ const AdminUsers = () => {
     const hasAdminRole = roles?.some(r => r.role === "admin");
     
     if (!hasAdminRole) {
-      toast.error("Zugriff verweigert: Nur Admins können auf diese Seite zugreifen");
+      toast.error("Zugriff verweigert");
       navigate("/dashboard");
       return;
     }
