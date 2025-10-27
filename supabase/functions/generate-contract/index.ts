@@ -94,15 +94,15 @@ Deno.serve(async (req) => {
 
     // Firmenadresse: Straße, PLZ, Stadt, Ländercode (alle auf einer Zeile mit mehr Abstand)
     if (customer.street) {
-      page1.drawText(customer.street, { x: 50, y: height - 258, size: 9, font });
+      page1.drawText(customer.street, { x: 50, y: height - 260, size: 9, font });
     }
     if (customer.postal_code) {
-      page1.drawText(customer.postal_code, { x: 258, y: height - 258, size: 9, font });
+      page1.drawText(customer.postal_code, { x: 260, y: height - 260, size: 9, font });
     }
     if (customer.city) {
-      page1.drawText(customer.city, { x: 349, y: height - 258, size: 9, font });
+      page1.drawText(customer.city, { x: 351, y: height - 260, size: 9, font });
     }
-    page1.drawText(customer.country || "DE", { x: 503, y: height - 286, size: 9, font });
+    page1.drawText(customer.country || "DE", { x: 507, y: height - 260, size: 9, font });
 
     // Ansprechpartner - erste authorized person
     if (authorizedPersons && authorizedPersons.length > 0) {
