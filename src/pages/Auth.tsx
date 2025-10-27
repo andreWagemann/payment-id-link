@@ -12,7 +12,6 @@ const Auth = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -20,23 +19,13 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        toast.success("Erfolgreich angemeldet!");
-        navigate("/dashboard");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        if (error) throw error;
-        toast.success("Konto erstellt! Sie können sich jetzt anmelden.");
-        setIsLogin(true);
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      toast.success("Erfolgreich angemeldet!");
+      navigate("/dashboard");
     } catch (error: any) {
       toast.error(error.message || "Ein Fehler ist aufgetreten");
     } finally {
@@ -55,7 +44,7 @@ const Auth = () => {
           </div>
           <CardTitle className="text-2xl text-center">Payment AG</CardTitle>
           <CardDescription className="text-center">
-            {isLogin ? "Melden Sie sich an, um fortzufahren" : "Erstellen Sie ein Vertriebskonto"}
+            Melden Sie sich an, um fortzufahren
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -84,18 +73,9 @@ const Auth = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Lädt..." : isLogin ? "Anmelden" : "Registrieren"}
+              {loading ? "Lädt..." : "Anmelden"}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:underline"
-            >
-              {isLogin ? "Noch kein Konto? Registrieren" : "Bereits registriert? Anmelden"}
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>

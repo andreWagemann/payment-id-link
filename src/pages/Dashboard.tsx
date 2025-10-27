@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Copy, ExternalLink, Edit, Eye, Trash2, FileCheck } from "lucide-react";
+import { LogOut, Plus, Copy, ExternalLink, Edit, Eye, Trash2, FileCheck, Shield } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -42,7 +43,16 @@ const Dashboard = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth");
+      return;
     }
+
+    // Check if user is admin
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id);
+
+    setIsAdmin(roles?.some(r => r.role === "admin") || false);
   };
 
   const loadCustomers = async () => {
@@ -115,6 +125,12 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Payment AG – KYC Dashboard</h1>
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/admin/users")}>
+                <Shield className="h-4 w-4 mr-2" />
+                Benutzerverwaltung
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/completed")}>
               <FileCheck className="h-4 w-4 mr-2" />
               Abgeschlossene Onboardings
