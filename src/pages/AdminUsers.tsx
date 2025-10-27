@@ -67,33 +67,14 @@ const AdminUsers = () => {
     try {
       setLoading(true);
       
-      // Get all users from auth (via service role in edge function would be better)
-      // For now, we'll get users who have roles assigned
-      const { data: userRoles, error } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
+      // Call edge function to get users with their emails
+      const { data, error } = await supabase.functions.invoke("get-users");
 
       if (error) throw error;
 
-      // Group roles by user
-      const usersMap = new Map<string, string[]>();
-      userRoles?.forEach(ur => {
-        if (!usersMap.has(ur.user_id)) {
-          usersMap.set(ur.user_id, []);
-        }
-        usersMap.get(ur.user_id)?.push(ur.role);
-      });
-
-      // Note: We can't get email from auth.users directly due to RLS
-      // In production, you'd use an edge function with service role
-      const usersList: UserWithRole[] = Array.from(usersMap.entries()).map(([id, roles]) => ({
-        id,
-        email: "user@example.com", // Placeholder - would come from edge function
-        created_at: new Date().toISOString(),
-        roles
-      }));
-
-      setUsers(usersList);
+      if (data?.users) {
+        setUsers(data.users);
+      }
     } catch (error: any) {
       toast.error("Fehler beim Laden der Benutzer: " + error.message);
     } finally {
