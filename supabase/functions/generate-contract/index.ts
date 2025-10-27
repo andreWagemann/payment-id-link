@@ -168,18 +168,18 @@ Deno.serve(async (req) => {
       }
 
       // Ausweisdokument
-      page1.drawText("Ausweis", { x: 67, y: height - 513, size: 8, font });
+      page1.drawText("Ausweis", { x: 67, y: height - 530, size: 8, font });
 
       // Ausweisnummer
       if (person1.id_document_number) {
-        page1.drawText(person1.id_document_number, { x: 196, y: height - 513, size: 8, font });
+        page1.drawText(person1.id_document_number, { x: 196, y: height - 530, size: 8, font });
       }
 
       // Datum der Ausstellung
       if (person1.id_document_issue_date) {
         page1.drawText(new Date(person1.id_document_issue_date).toLocaleDateString("de-DE"), {
           x: 305,
-          y: height - 513,
+          y: height - 530,
           size: 8,
           font,
         });
@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
 
       // Ausstellende Behörde
       if (person1.id_document_issuing_authority) {
-        page1.drawText(person1.id_document_issuing_authority, { x: 400, y: height - 513, size: 8, font });
+        page1.drawText(person1.id_document_issuing_authority, { x: 400, y: height - 530, size: 8, font });
       }
 
       // Checkbox "Ich handle in eigenem Namen..."
