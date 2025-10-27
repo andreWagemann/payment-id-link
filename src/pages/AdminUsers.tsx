@@ -8,6 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { ArrowLeft, UserPlus, Shield, Eye, EyeOff, Pencil } from "lucide-react";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -33,6 +40,11 @@ const AdminUsers = () => {
   const [creating, setCreating] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -102,6 +114,36 @@ const AdminUsers = () => {
       toast.error("Fehler beim Erstellen: " + error.message);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleEditUser = (user: UserWithRole) => {
+    setEditingUser(user);
+    setNewPassword("");
+    setShowNewPassword(false);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser || !newPassword) return;
+
+    setUpdating(true);
+    try {
+      const { error } = await supabase.functions.invoke("admin-update-user", {
+        body: { userId: editingUser.id, password: newPassword }
+      });
+
+      if (error) throw error;
+
+      toast.success("Passwort erfolgreich aktualisiert!");
+      setEditDialogOpen(false);
+      setEditingUser(null);
+      setNewPassword("");
+    } catch (error: any) {
+      toast.error("Fehler beim Aktualisieren: " + error.message);
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -217,7 +259,7 @@ const AdminUsers = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => toast.info("Bearbeiten-Funktion kommt bald")}
+                        onClick={() => handleEditUser(user)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -228,6 +270,59 @@ const AdminUsers = () => {
             </CardContent>
           </Card>
         </div>
+
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Benutzer bearbeiten</DialogTitle>
+              <DialogDescription>
+                Passwort für {editingUser?.email} ändern
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Neues Passwort</Label>
+                <div className="relative">
+                  <Input
+                    id="new-password"
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="Neues Passwort"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditDialogOpen(false)}
+                >
+                  Abbrechen
+                </Button>
+                <Button type="submit" disabled={updating}>
+                  {updating ? "Aktualisiert..." : "Passwort ändern"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
