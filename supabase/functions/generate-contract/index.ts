@@ -129,8 +129,8 @@ Deno.serve(async (req) => {
       page1.drawText("Herr", { x: 100, y: height - 427, size: 8, font });
 
       // Vorname + Nachname
-      page1.drawText(person1.first_name, { x: 250, y: height - 427, size: 8, font });
-      page1.drawText(person1.last_name, { x: 175, y: height - 427, size: 8, font });
+      page1.drawText(person1.first_name, { x: 260, y: height - 427, size: 8, font });
+      page1.drawText(person1.last_name, { x: 205, y: height - 427, size: 8, font });
 
       // Geburtsort, Geburtsdatum, Nationalität
       if (person1.place_of_birth) {
@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
         page1.drawText(person1.private_postal_code, { x: 270, y: height - 485, size: 8, font });
       }
       if (person1.private_city) {
-        page1.drawText(person1.private_city, { x: 255, y: height - 485, size: 8, font });
+        page1.drawText(person1.private_city, { x: 285, y: height - 485, size: 8, font });
       }
       if (person1.private_country) {
         page1.drawText(person1.private_country, { x: 510, y: height - 485, size: 8, font });
