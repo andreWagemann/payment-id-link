@@ -80,10 +80,6 @@ Deno.serve(async (req) => {
     const templateBytes = await templateData.arrayBuffer();
     const pdfDoc = await PDFDocument.load(templateBytes);
 
-    // Flatten form fields so text appears on top
-    const form = pdfDoc.getForm();
-    form.flatten();
-
     const pages = pdfDoc.getPages();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontSize = 9;
@@ -130,15 +126,15 @@ Deno.serve(async (req) => {
       const person1 = authorizedPersons[0];
 
       // 1. rechtlicher Vertreter - Anrede Herr
-      page1.drawText("Herr", { x: 90, y: height - 420, size: 8, font });
+      page1.drawText("Herr", { x: 80, y: height - 404, size: 8, font });
 
       // Vorname + Nachname
-      page1.drawText(person1.first_name, { x: 157, y: height - 420, size: 8, font });
-      page1.drawText(person1.last_name, { x: 312, y: height - 420, size: 8, font });
+      page1.drawText(person1.first_name, { x: 155, y: height - 404, size: 8, font });
+      page1.drawText(person1.last_name, { x: 310, y: height - 404, size: 8, font });
 
       // Geburtsort, Geburtsdatum, Nationalität
       if (person1.place_of_birth) {
-        page1.drawText(person1.place_of_birth, { x: 90, y: height - 430, size: 8, font });
+        page1.drawText(person1.place_of_birth, { x: 80, y: height - 419, size: 8, font });
       }
       if (person1.date_of_birth) {
         page1.drawText(new Date(person1.date_of_birth).toLocaleDateString("de-DE"), {
@@ -154,24 +150,24 @@ Deno.serve(async (req) => {
 
       // Privatadresse: Straße, PLZ, Stadt, Ländercode
       if (person1.private_street) {
-        page1.drawText(person1.private_street, { x: 50, y: height - 454, size: 8, font });
+        page1.drawText(person1.private_street, { x: 150, y: height - 434, size: 8, font });
       }
       if (person1.private_postal_code) {
         page1.drawText(person1.private_postal_code, { x: 270, y: height - 454, size: 8, font });
       }
       if (person1.private_city) {
-        page1.drawText(person1.private_city, { x: 345, y: height - 454, size: 8, font });
+        page1.drawText(person1.private_city, { x: 335, y: height - 454, size: 8, font });
       }
       if (person1.private_country) {
-        page1.drawText(person1.private_country, { x: 510, y: height - 454, size: 8, font });
+        page1.drawText(person1.private_country, { x: 500, y: height - 454, size: 8, font });
       }
 
       // Ausweisdokument
-      page1.drawText("Ausweis", { x: 80, y: height - 458, size: 8, font });
+      page1.drawText("Ausweis", { x: 80, y: height - 478, size: 8, font });
 
       // Ausweisnummer
       if (person1.id_document_number) {
-        page1.drawText(person1.id_document_number, { x: 175, y: height - 458, size: 8, font });
+        page1.drawText(person1.id_document_number, { x: 185, y: height - 478, size: 8, font });
       }
 
       // Datum der Ausstellung
