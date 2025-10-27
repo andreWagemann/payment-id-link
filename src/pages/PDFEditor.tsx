@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Copy, Download, Trash2 } from "lucide-react";
+import { Copy, Download, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import * as pdfjsLib from "pdfjs-dist";
 
 interface TextElement {
   id: string;
@@ -19,8 +20,89 @@ export default function PDFEditor() {
   const [elements, setElements] = useState<TextElement[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pdfHeight, setPdfHeight] = useState(842); // A4 height in points
+  const [pdfWidth, setPdfWidth] = useState(595);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    // Set up PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    
+    // Load default PDF
+    loadPDFFromUrl("/contract-template.pdf");
+  }, []);
+
+  const loadPDFFromUrl = async (url: string) => {
+    try {
+      const loadingTask = pdfjsLib.getDocument(url);
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(1);
+      
+      const viewport = page.getViewport({ scale: 1.0 });
+      setPdfHeight(Math.round(viewport.height));
+      setPdfWidth(Math.round(viewport.width));
+      
+      const canvas = pdfCanvasRef.current;
+      if (!canvas) return;
+      
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport,
+        canvas: canvas,
+      }).promise;
+      
+      setBackgroundImage(canvas.toDataURL());
+      toast.success("PDF template loaded!");
+    } catch (error) {
+      console.error("Error loading PDF:", error);
+      toast.error("Failed to load PDF template");
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(1);
+      
+      const viewport = page.getViewport({ scale: 1.0 });
+      setPdfHeight(Math.round(viewport.height));
+      setPdfWidth(Math.round(viewport.width));
+      
+      const canvas = pdfCanvasRef.current;
+      if (!canvas) return;
+      
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport,
+        canvas: canvas,
+      }).promise;
+      
+      setBackgroundImage(canvas.toDataURL());
+      toast.success("Custom PDF loaded!");
+    } catch (error) {
+      console.error("Error loading PDF:", error);
+      toast.error("Failed to load PDF");
+    }
+  };
 
   const addElement = () => {
     const newElement: TextElement = {
@@ -105,8 +187,24 @@ export default function PDFEditor() {
               <Download className="w-4 h-4 mr-2" />
               Export All
             </Button>
+            <label>
+              <Button variant="outline" asChild>
+                <span>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload PDF
+                </span>
+              </Button>
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+            </label>
           </div>
         </div>
+        
+        <canvas ref={pdfCanvasRef} className="hidden" />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Canvas Area */}
@@ -124,12 +222,20 @@ export default function PDFEditor() {
               
               <div
                 ref={canvasRef}
-                className="relative bg-white border-2 border-gray-300 shadow-lg"
-                style={{ width: "595px", height: `${pdfHeight}px` }}
+                className="relative bg-white border-2 border-gray-300 shadow-lg overflow-hidden"
+                style={{ width: `${pdfWidth}px`, height: `${pdfHeight}px` }}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
               >
+                {/* PDF Background */}
+                {backgroundImage && (
+                  <img
+                    src={backgroundImage}
+                    alt="PDF Template"
+                    className="absolute inset-0 w-full h-full pointer-events-none"
+                  />
+                )}
                 {/* Grid lines */}
                 <div className="absolute inset-0 pointer-events-none opacity-20">
                   {Array.from({ length: Math.floor(pdfHeight / 50) }).map((_, i) => (
