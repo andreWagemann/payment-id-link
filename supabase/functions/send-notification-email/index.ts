@@ -63,7 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         sender: {
           name: "KYC System",
-          email: "noreply@codea.de",
+          email: "info@ideal-alpha.com",
         },
         to: [
           {
