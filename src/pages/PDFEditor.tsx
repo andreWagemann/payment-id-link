@@ -23,8 +23,11 @@ export default function PDFEditor() {
   const [pdfWidth, setPdfWidth] = useState(595);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const canvasRef = useRef<HTMLDivElement>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
+  const pdfDocRef = useRef<any>(null);
 
   useEffect(() => {
     // Set up PDF.js worker from node_modules
@@ -116,11 +119,15 @@ export default function PDFEditor() {
     setElements(predefinedElements);
   }, []);
 
-  const loadPDFFromUrl = async (url: string) => {
+  const loadPDFFromUrl = async (url: string, pageNum: number = 1) => {
     try {
       const loadingTask = pdfjsLib.getDocument(url);
       const pdf = await loadingTask.promise;
-      const page = await pdf.getPage(1);
+      pdfDocRef.current = pdf;
+      setTotalPages(pdf.numPages);
+      setCurrentPage(pageNum);
+      
+      const page = await pdf.getPage(pageNum);
       
       const viewport = page.getViewport({ scale: 1.0 });
       setPdfHeight(Math.round(viewport.height));
@@ -142,10 +149,43 @@ export default function PDFEditor() {
       }).promise;
       
       setBackgroundImage(canvas.toDataURL());
-      toast.success("PDF template loaded!");
+      toast.success(`PDF Seite ${pageNum} von ${pdf.numPages} geladen!`);
     } catch (error) {
       console.error("Error loading PDF:", error);
       toast.error("Failed to load PDF template");
+    }
+  };
+
+  const loadPage = async (pageNum: number) => {
+    if (!pdfDocRef.current) return;
+    
+    try {
+      const page = await pdfDocRef.current.getPage(pageNum);
+      setCurrentPage(pageNum);
+      
+      const viewport = page.getViewport({ scale: 1.0 });
+      setPdfHeight(Math.round(viewport.height));
+      setPdfWidth(Math.round(viewport.width));
+      
+      const canvas = pdfCanvasRef.current;
+      if (!canvas) return;
+      
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport,
+        canvas: canvas,
+      }).promise;
+      
+      setBackgroundImage(canvas.toDataURL());
+    } catch (error) {
+      console.error("Error loading page:", error);
+      toast.error("Failed to load page");
     }
   };
 
@@ -157,6 +197,10 @@ export default function PDFEditor() {
       const arrayBuffer = await file.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
+      pdfDocRef.current = pdf;
+      setTotalPages(pdf.numPages);
+      setCurrentPage(1);
+      
       const page = await pdf.getPage(1);
       
       const viewport = page.getViewport({ scale: 1.0 });
@@ -179,7 +223,7 @@ export default function PDFEditor() {
       }).promise;
       
       setBackgroundImage(canvas.toDataURL());
-      toast.success("Custom PDF loaded!");
+      toast.success(`PDF geladen! ${pdf.numPages} Seiten`);
     } catch (error) {
       console.error("Error loading PDF:", error);
       toast.error("Failed to load PDF");
@@ -263,7 +307,28 @@ export default function PDFEditor() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">PDF Position Editor</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg">
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => loadPage(currentPage - 1)}
+                disabled={currentPage <= 1}
+              >
+                ←
+              </Button>
+              <span className="text-sm font-medium min-w-[80px] text-center">
+                Seite {currentPage} / {totalPages}
+              </span>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => loadPage(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+              >
+                →
+              </Button>
+            </div>
             <Button onClick={addElement}>Add Element</Button>
             <Button onClick={exportAllCoordinates} variant="outline">
               <Download className="w-4 h-4 mr-2" />
