@@ -33,8 +33,87 @@ export default function PDFEditor() {
       import.meta.url
     ).toString();
     
-    // Load default PDF
+    // Load default PDF and pre-populate fields
     loadPDFFromUrl("/contract-template.pdf");
+    
+    // Pre-populate all fields from the contract template
+    const predefinedElements: TextElement[] = [
+      // Seite 1 - Header Felder
+      { id: "1", label: "Kundennummer", x: 70, y: 175, text: "customer.customer_id", fontSize: 9 },
+      { id: "2", label: "Leistungsbeginn", x: 160, y: 175, text: "new Date(customer.created_at).toLocaleDateString('de-DE')", fontSize: 9 },
+      { id: "3", label: "MCC", x: 250, y: 175, text: "customer.mcc", fontSize: 9 },
+      { id: "4", label: "Vertragslaufzeit", x: 380, y: 175, text: "customer.contract_duration || '00'", fontSize: 9 },
+      
+      // Kontaktinformationen
+      { id: "5", label: "Kundenname", x: 70, y: 255, text: "customer.company_name", fontSize: 9 },
+      { id: "6", label: "Rechtl. Firmierung", x: 280, y: 255, text: "customer.legal_name", fontSize: 9 },
+      { id: "7", label: "Rechtsform", x: 460, y: 255, text: "customer.legal_form", fontSize: 9 },
+      
+      { id: "8", label: "Telefon Filiale", x: 70, y: 275, text: "customer.phone", fontSize: 9 },
+      { id: "9", label: "USt-IdNr", x: 180, y: 275, text: "customer.vat_id", fontSize: 9 },
+      { id: "10", label: "HR-Nummer", x: 300, y: 275, text: "customer.registration_number", fontSize: 9 },
+      { id: "11", label: "Registergericht", x: 430, y: 275, text: "customer.registration_court", fontSize: 9 },
+      
+      { id: "12", label: "Straße", x: 70, y: 295, text: "customer.street", fontSize: 9 },
+      { id: "13", label: "PLZ", x: 280, y: 295, text: "customer.postal_code", fontSize: 9 },
+      { id: "14", label: "Stadt", x: 350, y: 295, text: "customer.city", fontSize: 9 },
+      { id: "15", label: "Ländercode", x: 480, y: 295, text: "customer.country", fontSize: 9 },
+      
+      { id: "16", label: "Abw. Straße", x: 70, y: 315, text: "customer.location_street || customer.street", fontSize: 9 },
+      { id: "17", label: "Abw. PLZ", x: 280, y: 315, text: "customer.location_postal_code || customer.postal_code", fontSize: 9 },
+      { id: "18", label: "Abw. Stadt", x: 350, y: 315, text: "customer.location_city || customer.city", fontSize: 9 },
+      { id: "19", label: "Abw. Ländercode", x: 480, y: 315, text: "customer.location_country || customer.country", fontSize: 9 },
+      
+      { id: "20", label: "Ansprechpartner", x: 70, y: 335, text: "`${customer.contact_first_name} ${customer.contact_last_name}`", fontSize: 9 },
+      { id: "21", label: "E-Mail", x: 280, y: 335, text: "customer.email", fontSize: 9 },
+      { id: "22", label: "Telefon Zentrale", x: 430, y: 335, text: "customer.phone", fontSize: 9 },
+      
+      { id: "23", label: "Gläubiger-ID", x: 70, y: 355, text: "customer.creditor_id", fontSize: 9 },
+      
+      // Rechtliche Vertreter - Person 1
+      { id: "24", label: "Anrede P1", x: 70, y: 435, text: "authorizedPersons[0]?.salutation", fontSize: 9 },
+      { id: "25", label: "Vorname P1", x: 130, y: 435, text: "authorizedPersons[0]?.first_name", fontSize: 9 },
+      { id: "26", label: "Nachname P1", x: 240, y: 435, text: "authorizedPersons[0]?.last_name", fontSize: 9 },
+      
+      { id: "27", label: "Geburtsort P1", x: 70, y: 455, text: "authorizedPersons[0]?.birth_place", fontSize: 9 },
+      { id: "28", label: "Geburtsdatum P1", x: 180, y: 455, text: "authorizedPersons[0]?.birth_date", fontSize: 9 },
+      { id: "29", label: "Nationalität P1", x: 290, y: 455, text: "authorizedPersons[0]?.nationality", fontSize: 9 },
+      
+      { id: "30", label: "Privatadresse P1", x: 70, y: 475, text: "authorizedPersons[0]?.street", fontSize: 9 },
+      { id: "31", label: "PLZ P1", x: 280, y: 475, text: "authorizedPersons[0]?.postal_code", fontSize: 9 },
+      { id: "32", label: "Stadt P1", x: 350, y: 475, text: "authorizedPersons[0]?.city", fontSize: 9 },
+      { id: "33", label: "Ländercode P1", x: 480, y: 475, text: "authorizedPersons[0]?.country", fontSize: 9 },
+      
+      { id: "34", label: "Ausweisdokument P1", x: 70, y: 495, text: "authorizedPersons[0]?.id_document_type", fontSize: 9 },
+      { id: "35", label: "Ausweisnummer P1", x: 180, y: 495, text: "authorizedPersons[0]?.id_document_number", fontSize: 9 },
+      { id: "36", label: "Ausstellungsdatum P1", x: 290, y: 495, text: "authorizedPersons[0]?.id_issue_date", fontSize: 9 },
+      { id: "37", label: "Ausstellende Behörde P1", x: 400, y: 495, text: "authorizedPersons[0]?.id_issuing_authority", fontSize: 9 },
+      
+      { id: "38", label: "E-Mail P1", x: 280, y: 515, text: "authorizedPersons[0]?.email", fontSize: 9 },
+      { id: "39", label: "Telefonnummer P1", x: 430, y: 515, text: "authorizedPersons[0]?.phone", fontSize: 9 },
+      
+      // Rechtliche Vertreter - Person 2
+      { id: "40", label: "Anrede P2", x: 70, y: 575, text: "authorizedPersons[1]?.salutation", fontSize: 9 },
+      { id: "41", label: "Vorname P2", x: 130, y: 575, text: "authorizedPersons[1]?.first_name", fontSize: 9 },
+      { id: "42", label: "Nachname P2", x: 240, y: 575, text: "authorizedPersons[1]?.last_name", fontSize: 9 },
+      
+      { id: "43", label: "Geburtsort P2", x: 70, y: 595, text: "authorizedPersons[1]?.birth_place", fontSize: 9 },
+      { id: "44", label: "Geburtsdatum P2", x: 180, y: 595, text: "authorizedPersons[1]?.birth_date", fontSize: 9 },
+      { id: "45", label: "Nationalität P2", x: 290, y: 595, text: "authorizedPersons[1]?.nationality", fontSize: 9 },
+      
+      { id: "46", label: "Privatadresse P2", x: 70, y: 615, text: "authorizedPersons[1]?.street", fontSize: 9 },
+      { id: "47", label: "PLZ P2", x: 280, y: 615, text: "authorizedPersons[1]?.postal_code", fontSize: 9 },
+      { id: "48", label: "Stadt P2", x: 350, y: 615, text: "authorizedPersons[1]?.city", fontSize: 9 },
+      { id: "49", label: "Ländercode P2", x: 480, y: 615, text: "authorizedPersons[1]?.country", fontSize: 9 },
+      
+      { id: "50", label: "Ausweisdokument P2", x: 70, y: 635, text: "authorizedPersons[1]?.id_document_type", fontSize: 9 },
+      { id: "51", label: "Ausweisnummer P2", x: 180, y: 635, text: "authorizedPersons[1]?.id_document_number", fontSize: 9 },
+      
+      { id: "52", label: "E-Mail P2", x: 280, y: 655, text: "authorizedPersons[1]?.email", fontSize: 9 },
+      { id: "53", label: "Telefonnummer P2", x: 430, y: 655, text: "authorizedPersons[1]?.phone", fontSize: 9 },
+    ];
+    
+    setElements(predefinedElements);
   }, []);
 
   const loadPDFFromUrl = async (url: string) => {
